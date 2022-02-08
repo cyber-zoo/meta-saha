@@ -1,0 +1,9 @@
+repositories:
+  repos/core/poky:
+    type: git
+    url: git://git.yoctoproject.org/poky
+    version: master
+  repos/core/meta-openembedded:
+    type: git
+    url: git://git.openembedded.org/meta-openembedded
+    version: master

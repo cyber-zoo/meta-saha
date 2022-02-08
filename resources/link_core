@@ -1,0 +1,9 @@
+repos/core/poky/bitbake
+repos/core/poky/meta
+repos/core/poky/meta-skeleton
+repos/core/poky/oe-init-build-env
+repos/core/poky/scripts
+repos/core/meta-openembedded/meta-filesystems
+repos/core/meta-openembedded/meta-networking
+repos/core/meta-openembedded/meta-oe
+repos/core/meta-openembedded/meta-python
