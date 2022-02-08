@@ -1,0 +1,13 @@
+repositories:
+  repos/tools/meta-virtualization:
+    type: git
+    url: git://git.yoctoproject.org/meta-virtualization
+    version: master
+  repos/tools/meta-mender:
+    type: git
+    url: https://github.com/madisongh/meta-mender.git
+    version: dunfell-with-overrides-conversion
+  repos/tools/meta-mender-community:
+    type: git
+    url: https://github.com/OE4T/meta-mender-community.git
+    version: dunfell-with-overrides-conversion
