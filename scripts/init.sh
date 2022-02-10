@@ -13,26 +13,29 @@ then
     exit
 fi
 
+for file in $(ls $RES_PATH/*.repos)
+do
+  echo "import repositories from $file."
+  vcs import . < $file --skip-existing
+done
+
 if [ -d "$REPO_PATH" ]; then
   for file in $(ls $RES_PATH/*.repos)
   do
     echo "pull repositories from $file."
     vcs pull . < $file
   done
-else
-  for file in $(ls $RES_PATH/*.repos)
-  do
-    echo "import repositories from $file."
-    vcs import . < $file
-  done
 fi
+
+rm -rf layers/*
 
 if [ -d "$REPO_PATH" ]; then
   for file in $(ls $RES_PATH/link_*)
   do
     while IFS= read -r line; do
       ln -fs "$GIT_ROOT/$line" $GIT_ROOT/layers/${line##*/}
-      echo $line
     done < $file
   done
 fi
+
+echo "Init done."

@@ -7,3 +7,4 @@ repos/core/meta-openembedded/meta-filesystems
 repos/core/meta-openembedded/meta-networking
 repos/core/meta-openembedded/meta-oe
 repos/core/meta-openembedded/meta-python
+repos/core/meta-ros
