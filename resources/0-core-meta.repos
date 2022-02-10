@@ -7,3 +7,7 @@ repositories:
     type: git
     url: git://git.openembedded.org/meta-openembedded
     version: master
+  repos/core/meta-ros:
+    type: git
+    url: https://github.com/ros/meta-ros.git
+    version: master
