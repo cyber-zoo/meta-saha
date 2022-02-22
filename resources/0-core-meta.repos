@@ -1,7 +1,7 @@
 repositories:
   repos/core/poky:
     type: git
-    url: git://git.yoctoproject.org/poky
+    url: https://github.com/homalozoa/poky_fork.git
     version: master
   repos/core/meta-openembedded:
     type: git
