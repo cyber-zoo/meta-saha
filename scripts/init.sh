@@ -30,6 +30,12 @@ fi
 rm -rf layers/*
 
 if [ -d "$REPO_PATH" ]; then
+  if [ ! -d "$LAYER_PATH" ]; then
+    mkdir "$LAYER_PATH"
+  fi
+  if [ ! -e "$LAYER_PATH/.templateconf" ]; then
+    touch "$LAYER_PATH/.templateconf"
+  fi
   for file in $(ls $RES_PATH/link_*)
   do
     while IFS= read -r line; do
