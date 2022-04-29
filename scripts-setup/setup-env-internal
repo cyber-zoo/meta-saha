@@ -11,19 +11,19 @@ BUILDDIR_DEFAULT="build"
 
 distro_list() {
     local paths
-    paths=$(find -L $TD_TOP/layers/ -path '*meta-*/conf/distro/*' -name '*.conf')
+    paths=$(find -L $PWD/layers/ -path '*meta-*/conf/distro/*' -name '*.conf')
     find $paths -maxdepth 1 -name '*.conf' | xargs basename -s .conf | sort -u | awk '{print "\t" $0}'
 }
 
 distro_path() {    
-    local dconf=$(find -L "$TD_TOP"/layers -path "*/conf/distro/*" -name "${1}.conf" | head -n 1)
+    local dconf=$(find -L "$PWD"/layers -path "*/conf/distro/*" -name "${1}.conf" | head -n 1)
     [ -n "$dconf" ] || exit 1
     echo "$dconf" | sed -E -e's,.*/layers/([^/]+)/conf/.*,\1,'
 }
 
 
 machine_list() {
-    find -L "$TD_TOP"/layers/meta*/conf/machine -maxdepth 1 -name '*.conf' | xargs basename -s .conf | sort -u | awk '{print "\t" $0}'
+    find -L "$PWD"/layers/meta*/conf/machine -maxdepth 1 -name '*.conf' | xargs basename -s .conf | sort -u | awk '{print "\t" $0}'
 }
 
 

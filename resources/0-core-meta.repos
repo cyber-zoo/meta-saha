@@ -9,5 +9,5 @@ repositories:
     version: master
   repos/core/meta-ros:
     type: git
-    url: https://github.com/ros/meta-ros.git
+    url: https://github.com/homalozoa/meta-ros
     version: master
