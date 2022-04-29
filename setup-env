@@ -66,7 +66,7 @@ if [ $TD_RC -ne 0 ]; then
     return 1
 fi
 
-OEROOT=$(readlink -f "$TD_TOP/layers")
+OEROOT=$(readlink -f "$PWD/layers")
 export OEROOT
 
 # There can be multiple distro layers in the repository, which
