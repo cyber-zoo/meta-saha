@@ -1,6 +1,0 @@
-### Shell environment set up for builds. ###
-
-You can now run 'bitbake <target>'
-Targets for building Saha images with test applications:
-    core-image-minimal  - minimally bootable image (no demo apps, no graphics)
-    saha-image-base     - basic image with no graphics

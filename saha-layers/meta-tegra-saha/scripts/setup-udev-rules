@@ -9,22 +9,12 @@ else
 fi
 set -e
 cat << EOF > /etc/udev/rules.d/99-oe4t.rules
-# Jetson TK1
-SUBSYSTEMS=="usb", ATTRS{idVendor}=="0955", ATTRS{idProduct}=="7140", GROUP="plugdev"
-# Jetson TX1
-SUBSYSTEMS=="usb", ATTRS{idVendor}=="0955", ATTRS{idProduct}=="7721", GROUP="plugdev"
-# Jetson TX2
-SUBSYSTEMS=="usb", ATTRS{idVendor}=="0955", ATTRS{idProduct}=="7c18", GROUP="plugdev"
-# Jetson TX2i
-SUBSYSTEMS=="usb", ATTRS{idVendor}=="0955", ATTRS{idProduct}=="7018", GROUP="plugdev"
-# Jetson TX2-4GB
-SUBSYSTEMS=="usb", ATTRS{idVendor}=="0955", ATTRS{idProduct}=="7418", GROUP="plugdev"
 # Jetson AGX Xavier
 SUBSYSTEMS=="usb", ATTRS{idVendor}=="0955", ATTRS{idProduct}=="7019", GROUP="plugdev"
 # Jetson Xavier NX
 SUBSYSTEMS=="usb", ATTRS{idVendor}=="0955", ATTRS{idProduct}=="7e19", GROUP="plugdev"
-# Jetson Nano
-SUBSYSTEMS=="usb", ATTRS{idVendor}=="0955", ATTRS{idProduct}=="7f21", GROUP="plugdev"
+# Jetson Orin AGX
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="0955", ATTRS{idProduct}=="7023", GROUP="plugdev"
 EOF
 udevadm control --reload
 echo "udev settings applied, please disconnect/reconnect your device"
