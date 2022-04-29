@@ -9,11 +9,12 @@
 # You need to select a specific machine to target the build with.
 # The following machines are avilable in the meta-tegra layer:
 #
-#MACHINE ?= "jetson-tx2-devkit"
-#MACHINE ?= "jetson-agx-xavier-devkit-8gb"
 #MACHINE ?= "jetson-agx-xavier-devkit"
 #MACHINE ?= "jetson-xavier-nx-devkit"
 #MACHINE ?= "jetson-xavier-nx-devkit-emmc"
+#MACHINE ?= "rolling-nx"
+#MACHINE ?= "rolling-x3m"
+#MACHINE ?= "rolling-cm4"
 #@TD_SETUP_MACHINE@ - placeholder for automatic insertion by setup-env
 #
 # This sets the default machine to be qemux86-64 if no other machine is selected:
