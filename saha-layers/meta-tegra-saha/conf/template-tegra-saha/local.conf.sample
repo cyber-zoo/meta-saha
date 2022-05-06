@@ -13,8 +13,6 @@
 #MACHINE ?= "jetson-xavier-nx-devkit"
 #MACHINE ?= "jetson-xavier-nx-devkit-emmc"
 #MACHINE ?= "rolling-nx"
-#MACHINE ?= "rolling-x3m"
-#MACHINE ?= "rolling-cm4"
 #@TD_SETUP_MACHINE@ - placeholder for automatic insertion by setup-env
 #
 # This sets the default machine to be qemux86-64 if no other machine is selected:
