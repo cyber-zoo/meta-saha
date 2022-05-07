@@ -31,5 +31,5 @@ replacement_read_only_rootfs_hook() {
     fi
 }
 
-ROOTFS_POSTPROCESS_COMMAND:remove:tegrademo-mender = "read_only_rootfs_hook;"
-ROOTFS_POSTPROCESS_COMMAND:append:tegrademo-mender = "${@bb.utils.contains('IMAGE_FEATURES', 'read-only-rootfs', ' replacement_read_only_rootfs_hook;', '', d)}"
+ROOTFS_POSTPROCESS_COMMAND:remove:tegra-saha = "read_only_rootfs_hook;"
+ROOTFS_POSTPROCESS_COMMAND:append:tegra-saha = "${@bb.utils.contains('IMAGE_FEATURES', 'read-only-rootfs', ' replacement_read_only_rootfs_hook;', '', d)}"
