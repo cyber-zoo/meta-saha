@@ -76,8 +76,6 @@ MACHINE ??= "qemux86-64"
 # Base distro for meta-tegra
 #DISTRO ?= "tegra-saha"
 # Base distro with Mender OTA update support:
-#DISTRO ?= "tegra-saha-mender"
-
 #
 # Package Management configuration
 #
