@@ -9,5 +9,6 @@ RDEPENDS:${PN} = " \
     procps \
     sshfs-fuse \
     strace \
+    can-utils \
     tegra-tools-tegrastats \
 "
