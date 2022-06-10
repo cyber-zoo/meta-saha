@@ -31,7 +31,7 @@ SRC_URI = "git://${KERNEL_REPO};name=machine;branch=${KBRANCH} \
            ${@'file://disable-fw-user-helper.cfg' if d.getVar('KERNEL_DISABLE_FW_USER_HELPER') == 'y' else ''} \
            ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'file://systemd.cfg', '', d)} \
            ${@'file://wireless_regdb.cfg' if d.getVar('KERNEL_INTERNAL_WIRELESS_REGDB') == '1' else ''} \
-           file://mini-board-a310.patch \
+           ${@'file://mini-board-a310.patch' if d.getVar('BOARD_TYPE') == 'Rolling_A310' else ''} \
 "
 
 PATH:prepend = "${STAGING_BINDIR_NATIVE}/kern-tools-tegra:"
