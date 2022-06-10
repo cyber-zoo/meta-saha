@@ -15,15 +15,6 @@ require conf/machine/include/tegra194.inc
 
 KERNEL_DEVICETREE ?= "tegra194-p3668-all-p3509-0000.dtb"
 KERNEL_ARGS ?= ""
-
-MACHINE_FEATURES += "wifi bluetooth"
-MACHINE_EXTRA_RRECOMMENDS += "tegra-firmware-rtl8822 \
-                              kernel-module-rtk-btusb \
-                              kernel-module-rtl8822ce \
-                              kernel-module-can \
-                              kernel-module-can-raw \
-                              kernel-module-mttcan \
-                            "
 TEGRA_BT_SUPPORT_PACKAGE = ""
 
 EMMC_DEVSECT_SIZE ?= "512"
