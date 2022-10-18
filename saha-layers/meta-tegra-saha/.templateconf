@@ -1,1 +1,1 @@
-TEMPLATECONF=${TEMPLATECONF:-meta-tegra-saha/conf/template-$DISTRO}
+TEMPLATECONF=${TEMPLATECONF:-meta-tegra-saha/conf/templates/$DISTRO}

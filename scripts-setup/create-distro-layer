@@ -63,8 +63,8 @@ if [ -d layers/meta-tegra-saha ]; then
     rm -rf ${LAYER_DIR}/recipes-*
 
     # Adjust the data in templates
-    mv ${LAYER_DIR}/conf/template-tegra-saha ${LAYER_DIR}/conf/template-${DISTRO_NAME}
-    rm -rf ${LAYER_DIR}/conf/template-tegra-saha
+    mv ${LAYER_DIR}/conf/templates/tegra-saha ${LAYER_DIR}/conf/templates/${DISTRO_NAME}
+    rm -rf ${LAYER_DIR}/conf/templates/tegra-saha
 
     # Adjust the data in conf/distro
     cat ${LAYER_DIR}/conf/distro/tegra-saha.conf > ${LAYER_DIR}/conf/distro/${DISTRO_NAME}.conf
