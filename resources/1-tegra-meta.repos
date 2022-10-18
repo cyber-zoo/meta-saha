@@ -2,8 +2,8 @@ repositories:
   repos/nvidia/meta-tegra:
     type: git
     url: https://github.com/OE4T/meta-tegra.git
-    version: wip-jetpack-5-dp
+    version: master
   repos/nvidia/meta-tegra-community:
     type: git
     url: https://github.com/OE4T/meta-tegra-community
-    version: wip-jetpack-5-dp
+    version: master
