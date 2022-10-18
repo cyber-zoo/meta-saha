@@ -1,0 +1,1 @@
+PACKAGECONFIG = "gadget-schemes libconfig"
