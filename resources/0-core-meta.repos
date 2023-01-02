@@ -1,7 +1,7 @@
 repositories:
   repos/core/poky:
     type: git
-    url: https://github.com/homalozoa/poky_fork.git
+    url: https://github.com/cyber-zoo/poky.git
     version: master
   repos/core/meta-openembedded:
     type: git
