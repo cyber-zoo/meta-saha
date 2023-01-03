@@ -1,4 +1,5 @@
 # Copyright (c) 2022 Homalozoa
+# Author: Homalozoa nx.tardis@gmail.com
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,20 +12,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-ARG FROM_IMAGE=arm64v8/ubuntu:20.04
-ARG gfw=0
-FROM $FROM_IMAGE AS base-image
-ENV UBUNTU_VER=focal
 
-FROM base-image AS build-in-gfw-1
-ENV GITHUB_URL="hub.fastgit.org"
-ENV GITHUB_RAW="raw.fastgit.org"
+FROM arm64v8/ubuntu:22.04
+LABEL org.opencontainers.image.authors=nx.tardis@gmail.com
 
-FROM base-image AS build-in-gfw-0
-ENV GITHUB_URL="github.com"
-ENV GITHUB_RAW="raw.githubusercontent.com"
+ENV UBUNTU_VER=jammy
+ENV ROS_VER=humble
 
-FROM build-in-gfw-${gfw} AS final
 # replace mirror (replace one near you)
 RUN apt-get update && \
   apt-get install -q -y --no-install-recommends ca-certificates && \
@@ -73,8 +67,8 @@ RUN apt-get update && \
   wget \
   curl \
   vim \
-  ros-galactic-ros-base \
-  ros-galactic-rmw-fastrtps-cpp
+  ros-${ROS_VER}-ros-base \
+  ros-${ROS_VER}-rmw-fastrtps-cpp
 
 # set python3 default
 RUN rm -f /usr/bin/python && \
@@ -106,7 +100,7 @@ RUN apt-get clean
 RUN echo '#!/bin/bash\n' > /ros_entrypoint.sh && \
   echo 'set -e\n' >> /ros_entrypoint.sh && \
   echo '# setup ros2 environment\n' >> /ros_entrypoint.sh && \
-  echo 'source /opt/ros/galactic/setup.sh\n' >> /ros_entrypoint.sh && \
+  echo 'source /opt/ros/${ROS_VER}/setup.sh\n' >> /ros_entrypoint.sh && \
   echo 'export RMW_IMPLEMENTATION=rmw_fastrtps_cpp\n' >> /ros_entrypoint.sh && \
   echo 'exec "$@"' >> /ros_entrypoint.sh && \
   chmod +x /ros_entrypoint.sh
