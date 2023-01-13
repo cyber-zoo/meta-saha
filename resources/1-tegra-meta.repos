@@ -2,8 +2,8 @@ repositories:
   repos/nvidia/meta-tegra:
     type: git
     url: https://github.com/OE4T/meta-tegra.git
-    version: master
+    version: kirkstone
   repos/nvidia/meta-tegra-community:
     type: git
     url: https://github.com/OE4T/meta-tegra-community
-    version: master
+    version: kirkstone

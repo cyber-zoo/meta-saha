@@ -1,5 +1,1 @@
 repositories:
-  repos/tools/meta-intel-realsense:
-    type: git
-    url: https://github.com/IntelRealSense/meta-intel-realsense.git
-    version: kirkstone

@@ -1,5 +1,5 @@
 repositories:
   repos/tools/meta-virtualization:
     type: git
-    url: git://git.yoctoproject.org/meta-virtualization
-    version: master
+    url: https://github.com/cyber-zoo/meta-virtualization
+    version: kirkstone
