@@ -87,7 +87,7 @@ MACHINE ??= "qemux86-64"
 #  - 'package_ipk' for ipk files are used by opkg (a debian style embedded package manager)
 #  - 'package_rpm' for rpm style packages
 # E.g.: PACKAGE_CLASSES ?= "package_rpm package_deb package_ipk"
-# We default to rpm:
+# saha default to rpm:
 PACKAGE_CLASSES ?= "package_rpm"
 
 #
@@ -123,7 +123,7 @@ SDKMACHINE ?= "x86_64"
 #                     e.g. ssh root access has a blank password
 # There are other application targets that can be used here too, see
 # meta/classes/image.bbclass and meta/classes/core-image.bbclass for more details.
-# We default to enabling the debugging tweaks.
+# saha default to enabling the debugging tweaks.
 EXTRA_IMAGE_FEATURES ?= "debug-tweaks"
 
 #
