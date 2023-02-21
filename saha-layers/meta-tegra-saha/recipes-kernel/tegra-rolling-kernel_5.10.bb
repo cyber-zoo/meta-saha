@@ -14,15 +14,15 @@ DEPENDS:remove = "kern-tools-native"
 DEPENDS:append = " kern-tools-tegra-native"
 DEPENDS:append = "${@' wireless-regdb-native' if bb.utils.to_boolean(d.getVar('KERNEL_INTERNAL_WIRELESS_REGDB')) else ''}"
 
-LINUX_VERSION ?= "5.10.65"
+LINUX_VERSION ?= "5.10.104"
 PV = "${LINUX_VERSION}+git${SRCPV}"
 FILESEXTRAPATHS:prepend := "${THISDIR}/${BPN}-${@bb.parse.vars_from_file(d.getVar('FILE', False),d)[1]}:"
 
 LINUX_VERSION_EXTENSION ?= "-l4t-r${@'.'.join(d.getVar('L4T_VERSION').split('.')[:2])}"
 SCMVERSION ??= "y"
 
-SRCBRANCH = "oe4t-patches${LINUX_VERSION_EXTENSION}-dp"
-SRCREV = "4fc0249f4dd4b0e9ee905eb7d09d4d5c591fd038"
+SRCBRANCH = "oe4t-patches${LINUX_VERSION_EXTENSION}"
+SRCREV = "f5dd4195b2f42a92c5dec5c1b09b0305719419ed"
 KBRANCH = "${SRCBRANCH}"
 SRC_REPO = "github.com/OE4T/linux-tegra-5.10.git;protocol=https"
 KERNEL_REPO = "${SRC_REPO}"
