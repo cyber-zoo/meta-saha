@@ -9,5 +9,4 @@ inherit packagegroup
 RDEPENDS:${PN} = " \
     less \
     systemd-analyze \
-    l4t-usb-device-mode \
 "

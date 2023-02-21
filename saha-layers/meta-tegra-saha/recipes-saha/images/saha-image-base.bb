@@ -7,3 +7,5 @@ IMAGE_FEATURES += "hwcodecs"
 CORE_IMAGE_BASE_INSTALL += "nvidia-docker cuda-libraries"
 CORE_IMAGE_BASE_INSTALL += "packagegroup-saha-env"
 CORE_IMAGE_BASE_INSTALL += "packagegroup-saha-peripheral"
+CORE_IMAGE_EXTRA_INSTALL = "kernel-module-ucsi-ccg"
+
