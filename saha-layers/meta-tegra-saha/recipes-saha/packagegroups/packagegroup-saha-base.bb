@@ -11,4 +11,5 @@ RDEPENDS:${PN} = " \
     strace \
     can-utils \
     tegra-tools-tegrastats \
+    dosfstools \
 "
