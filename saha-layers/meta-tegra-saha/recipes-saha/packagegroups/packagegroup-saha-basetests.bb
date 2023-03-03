@@ -6,5 +6,6 @@ inherit packagegroup
 
 RDEPENDS:${PN} = " \
     cuda-samples \
-    gpu-burn \
+    optee-nvsamples \
+    optee-test \
 "
