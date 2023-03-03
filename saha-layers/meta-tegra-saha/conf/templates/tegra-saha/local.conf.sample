@@ -10,6 +10,7 @@
 # The following machines are avilable in the meta-tegra layer:
 #
 #MACHINE ?= "jetson-agx-xavier-devkit"
+#MACHINE ?= "jetson-agx-orin-devkit"
 #MACHINE ?= "jetson-xavier-nx-devkit"
 #MACHINE ?= "jetson-xavier-nx-devkit-emmc"
 #MACHINE ?= "rolling-nx"
