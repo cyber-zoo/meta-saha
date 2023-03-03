@@ -14,18 +14,18 @@ MACHINEOVERRIDES =. "xavier-nx:"
 require conf/machine/include/tegra194.inc
 
 KERNEL_DEVICETREE ?= "tegra194-p3668-all-p3509-0000.dtb"
-KERNEL_ARGS ?= ""
-TEGRA_BT_SUPPORT_PACKAGE = ""
+KERNEL_ARGS ?= "console=ttyTCU0,115200 console=tty0 fbcon=map:0"
 
 EMMC_DEVSECT_SIZE ?= "512"
 BOOTPART_SIZE ?= ""
 BOOTPART_LIMIT ?= "10485760"
 ROOTFSPART_SIZE ?= "15032385536"
+RECROOTFSSIZE ?= "104857600"
 ODMDATA ?= "0xB8190000"
 EMMC_BCT ?= "tegra194-mb1-bct-memcfg-p3668-0001-a00.cfg"
 EMMC_BCT_OVERRIDE ?= "tegra194-memcfg-sw-override.cfg"
 NVIDIA_BOARD ?= "t186ref"
-OVERLAY_DTB_FILE ?= "${TEGRA_BOOTCONTROL_OVERLAYS},tegra194-p3668-p3509-overlay.dtbo"
+TEGRA_PLUGIN_MANAGER_OVERLAYS ?= "tegra194-p3668-p3509-overlay.dtbo"
 
 OTABOOTDEV ?= "/dev/mtdblock0"
 OTAGPTDEV ?= "/dev/mtdblock0"
