@@ -19,4 +19,4 @@ WB0SDRAM_BCT="tegra234-p3767-0000-wb0sdram-l4t.dts"
 OVERLAY_DTB_FILE="@OVERLAY_DTB_FILE@"
 SCR_CONFIG="tegra234-mb2-bct-scr-p3767-0000.dts"
 EMC_FUSE_DEV_PARAMS="tegra234-br-bct-diag-boot.dts"
-
+BOOTDEV="nvme0n1p1"
