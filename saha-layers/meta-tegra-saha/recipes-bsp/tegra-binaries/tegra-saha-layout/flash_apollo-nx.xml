@@ -20,7 +20,7 @@
               partitions defined after this entry are configured in the kernel, and are accessible
               by standard partition tools such as gdisk and parted. </description>
         </partition>
-        <partition name="A_kernel" id="2" type="kernel">
+        <partition name="A_kernel" id="3" type="kernel">
             <allocation_policy> sequential </allocation_policy>
             <filesystem_type> basic </filesystem_type>
             <size> 134217728 </size>
