@@ -112,7 +112,7 @@
             <allocation_attribute> 0x8 </allocation_attribute>
             <align_boundary> 16384 </align_boundary>
             <percent_reserved> 0 </percent_reserved>
-            <unique_guid> APPUUID </unique_guid>
+            <unique_guid> APPUUID_b </unique_guid>
             <filename> APPFILE </filename>
             <description> **Required.** Contains the backup of rootfs. Should be the second partition.</description>
         </partition>
