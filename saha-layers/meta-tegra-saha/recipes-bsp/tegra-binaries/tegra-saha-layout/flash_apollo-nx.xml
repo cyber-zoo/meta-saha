@@ -20,7 +20,7 @@
               partitions defined after this entry are configured in the kernel, and are accessible
               by standard partition tools such as gdisk and parted. </description>
         </partition>
-        <partition name="A_kernel" id="3" type="kernel">
+        <partition name="kernel_a" id="3" type="kernel">
             <allocation_policy> sequential </allocation_policy>
             <filesystem_type> basic </filesystem_type>
             <size> 134217728 </size>
@@ -29,7 +29,7 @@
             <percent_reserved> 0 </percent_reserved>
             <filename> LNXFILE </filename>
         </partition>
-        <partition name="A_kernel-dtb" type="kernel_dtb">
+        <partition name="kernel-dtb_a" type="kernel_dtb">
             <allocation_policy> sequential </allocation_policy>
             <filesystem_type> basic </filesystem_type>
             <size> 786432 </size>
@@ -38,7 +38,7 @@
             <percent_reserved> 0 </percent_reserved>
             <filename> DTB_FILE </filename>
         </partition>
-        <partition name="A_reserved_on_user" type="data">
+        <partition name="reserved_on_user_a" type="data">
             <allocation_policy> sequential </allocation_policy>
             <filesystem_type> basic </filesystem_type>
             <size> 33161216 </size>
@@ -46,7 +46,7 @@
             <allocation_attribute> 8 </allocation_attribute>
             <percent_reserved> 0 </percent_reserved>
         </partition>
-        <partition name="B_kernel" type="kernel">
+        <partition name="kernel_b" type="kernel">
             <allocation_policy> sequential </allocation_policy>
             <filesystem_type> basic </filesystem_type>
             <size> 134217728 </size>
@@ -55,7 +55,7 @@
             <percent_reserved> 0 </percent_reserved>
             <filename> LNXFILE </filename>
         </partition>
-        <partition name="B_kernel-dtb" type="kernel_dtb">
+        <partition name="kernel-dtb_b" type="kernel_dtb">
             <allocation_policy> sequential </allocation_policy>
             <filesystem_type> basic </filesystem_type>
             <size> 786432 </size>
@@ -64,7 +64,7 @@
             <percent_reserved> 0 </percent_reserved>
             <filename> DTB_FILE </filename>
         </partition>
-        <partition name="B_reserved_on_user" type="data">
+        <partition name="reserved_on_user_b" type="data">
             <allocation_policy> sequential </allocation_policy>
             <filesystem_type> basic </filesystem_type>
             <size> 33161216 </size>
