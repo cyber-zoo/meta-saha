@@ -28,7 +28,7 @@ LAYER_PATH=$WS_ROOT/layers
 if ! command -v vcs &> /dev/null
 then
     echo "vcstool not found, install it, please."
-    exit
+    return 1
 fi
 
 for file in $(ls $RES_PATH/*.repos)
