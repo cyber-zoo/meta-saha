@@ -585,7 +585,23 @@
             <percent_reserved> 0 </percent_reserved>
         </partition>
     </device>
-    <device type="nvme" instance="0" sector_size="512" num_sectors="15269888">
+    <device type="sdcard" instance="0" sector_size="512" num_sectors="124321792">
+        <partition name="master_boot_record" type="protective_master_boot_record">
+            <allocation_policy> sequential </allocation_policy>
+            <filesystem_type> basic </filesystem_type>
+            <size> 512 </size>
+            <file_system_attribute> 0 </file_system_attribute>
+            <allocation_attribute> 8 </allocation_attribute>
+            <percent_reserved> 0 </percent_reserved>
+        </partition>
+        <partition name="primary_gpt" type="primary_gpt">
+            <allocation_policy> sequential </allocation_policy>
+            <filesystem_type> basic </filesystem_type>
+            <size> 19968 </size>
+            <file_system_attribute> 0 </file_system_attribute>
+            <allocation_attribute> 8 </allocation_attribute>
+            <percent_reserved> 0 </percent_reserved>
+        </partition>
         <partition name="A_kernel" id="2" type="kernel">
             <allocation_policy> sequential </allocation_policy>
             <filesystem_type> basic </filesystem_type>
