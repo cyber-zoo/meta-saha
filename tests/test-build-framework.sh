@@ -361,10 +361,32 @@ grep -qxF '    CORE_IMAGE_BASE_INSTALL:append = " packagegroup-rdk-x5-accelerato
 RDK_LAYER="$ROOT_DIR/saha-layers/meta-rdk-x5-saha"
 RDK_IMAGE="$RDK_LAYER/recipes-saha/images/saha-image-robot.bb"
 RDK_WKS="$RDK_LAYER/recipes-saha/images/rdk-x5.wks.in"
+RDK_BASE_GROUP="$RDK_LAYER/recipes-saha/packagegroups/packagegroup-saha-rdk-x5-base.bb"
+RDK_NETWORK_RECIPE="$RDK_LAYER/recipes-connectivity/systemd-networkd/saha-rdk-x5-network_1.0.bb"
+RDK_NETWORK_PROFILE="$RDK_LAYER/recipes-connectivity/systemd-networkd/saha-rdk-x5-network/20-saha-eth0.network"
 [ -f "$RDK_LAYER/conf/layer.conf" ] || fail "RDK X5 Saha layer configuration must exist"
 [ -f "$RDK_LAYER/conf/distro/saha-rdk-x5.conf" ] || fail "RDK X5 distro configuration must exist"
 [ -f "$RDK_IMAGE" ] || fail "RDK X5 robot image recipe must exist"
 [ -f "$RDK_WKS" ] || fail "RDK X5 WIC layout must exist"
+[ -f "$RDK_BASE_GROUP" ] || fail "RDK X5 base packagegroup must exist"
+[ -f "$RDK_NETWORK_RECIPE" ] || fail "RDK X5 network profile recipe must exist"
+[ -f "$RDK_NETWORK_PROFILE" ] || fail "RDK X5 Ethernet profile must exist"
+grep -qxF '    systemd-networkd \' "$RDK_BASE_GROUP" ||
+  fail "RDK X5 base image must install systemd-networkd"
+grep -qxF '    saha-rdk-x5-network \' "$RDK_BASE_GROUP" ||
+  fail "RDK X5 base image must install its Ethernet profile"
+grep -qxF 'COMPATIBLE_MACHINE = "^rdk-x5$"' "$RDK_NETWORK_RECIPE" ||
+  fail "RDK X5 Ethernet profile must stay machine-scoped"
+grep -qxF 'RDEPENDS:${PN} = "systemd-networkd"' "$RDK_NETWORK_RECIPE" ||
+  fail "RDK X5 Ethernet profile must depend on systemd-networkd"
+grep -qxF 'S = "${UNPACKDIR}"' "$RDK_NETWORK_RECIPE" ||
+  fail "RDK X5 Ethernet profile must use Wrynose's unpack directory"
+grep -qxF '    install -m 0644 ${UNPACKDIR}/20-saha-eth0.network \' "$RDK_NETWORK_RECIPE" ||
+  fail "RDK X5 Ethernet profile must use systemd-networkd-safe permissions"
+grep -qxF 'Name=eth0' "$RDK_NETWORK_PROFILE" ||
+  fail "RDK X5 Ethernet profile must target eth0"
+grep -qxF 'DHCP=yes' "$RDK_NETWORK_PROFILE" ||
+  fail "RDK X5 Ethernet profile must use DHCP"
 grep -qxF 'WKS_FILE = "rdk-x5.wks.in"' "$RDK_IMAGE" ||
   fail "RDK X5 image must select its WIC layout"
 grep -qxF 'WKS_FILE_DEPENDS = "${WKS_FILE_DEPENDS_DEFAULT} d-robotics-bootfiles"' "$RDK_IMAGE" ||

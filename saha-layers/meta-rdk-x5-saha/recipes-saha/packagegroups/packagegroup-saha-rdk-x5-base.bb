@@ -10,4 +10,6 @@ RDEPENDS:${PN} = " \
     strace \
     can-utils \
     dosfstools \
+    systemd-networkd \
+    saha-rdk-x5-network \
 "
