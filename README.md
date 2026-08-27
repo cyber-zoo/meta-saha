@@ -1,8 +1,8 @@
 # meta-saha
 
-`meta-saha` is a Yocto Project distro layer and build framework for NVIDIA Jetson systems. The primary workflow builds Jetson Orin and Thor images with kas inside Docker, so the host only needs Docker and does not need kas, bitbake, vcstool, or Yocto build packages installed.
+`meta-saha` is a Yocto Project distro layer and build framework for NVIDIA Jetson and D-Robotics RDK X5 systems. The primary workflow builds images with kas inside Docker, so the host only needs Docker and does not need kas, bitbake, vcstool, or Yocto build packages installed.
 
-The current baseline is Yocto Project 6.0 Wrynose and OE4T `meta-tegra` Wrynose, targeting JetPack 7.2 / L4T R39.2.0.
+The Jetson baseline is Yocto Project 6.0 Wrynose and OE4T `meta-tegra` Wrynose, targeting JetPack 7.2 / L4T R39.2.0. RDK X5 uses a separate, pinned Wrynose graph with the [RDKOS 3.5.0](https://developer.d-robotics.cc/rdk_x_doc/Release_Note/release_note) / SDK 1.1.1 release contract and Linux 6.1.83; it does not inherit Tegra layers or moving branch heads.
 
 ## Supported targets
 
@@ -11,6 +11,7 @@ The current baseline is Yocto Project 6.0 Wrynose and OE4T `meta-tegra` Wrynose,
 | `orin-nx-16g-p3768` | `p3768-0000-p3767-0000` | Jetson Orin NX 16GB module in P3768 carrier |
 | `agx-thor-devkit` | `jetson-agx-thor-devkit` | Jetson AGX Thor devkit |
 | `agx-orin-devkit` | `jetson-agx-orin-devkit` | Jetson AGX Orin devkit |
+| `rdk-x5` | `rdk-x5` | D-Robotics RDK X5 development board |
 
 List targets with:
 
@@ -22,7 +23,8 @@ List targets with:
 
 - Docker with permission to run containers as your user.
 - Enough disk space for a Yocto build. A first build can consume hundreds of GB across build output, downloads, and sstate cache.
-- Network access to fetch Yocto, OpenEmbedded, OE4T, and NVIDIA sources.
+- Network access to fetch Yocto, OpenEmbedded, OE4T, NVIDIA, and D-Robotics sources.
+- For `rdk-x5`, a local checkout of the `meta-d-robotics` BSP layer. Its recipes use fixed official D-Robotics source revisions; pass its location through `SAHA_META_D_ROBOTICS_DIR`.
 
 No host-side Yocto package setup is part of the primary build path.
 
@@ -41,17 +43,26 @@ Build the other priority targets with:
 ./scripts/saha-build agx-orin-devkit
 ```
 
-The script builds the Docker builder image, mounts persistent cache directories, then runs:
+Build RDK X5 with its BSP layer mounted read-only:
+
+```bash
+SAHA_META_D_ROBOTICS_DIR=/path/to/meta-d-robotics \
+  ./scripts/saha-build rdk-x5
+```
+
+The script builds the Docker builder image, mounts persistent cache directories, then runs a target-specific kas graph. Jetson targets use:
 
 ```bash
 kas build kas/targets/<target>.yml:kas/include/ros-distro-jazzy.yml
 ```
 
-`jazzy` is the default ROS 2 distro. Build the same `saha-image-robot` image with ROS 2 Lyrical by setting `SAHA_ROS_DISTRO`:
+`rdk-x5` uses `kas/targets/rdk-x5.yml`, which pins the RDK-compatible layers and ROS 2 Jazzy. `jazzy` is also the default ROS 2 distro for Jetson. Build the same Jetson `saha-image-robot` image with ROS 2 Lyrical by setting `SAHA_ROS_DISTRO`:
 
 ```bash
 SAHA_ROS_DISTRO=lyrical ./scripts/saha-build orin-nx-16g-p3768
 ```
+
+RDK X5 deliberately rejects `SAHA_ROS_DISTRO=lyrical`; the independent compatibility graph prevents an unverified ROS/BSP combination from entering an otherwise reproducible build.
 
 ## Output and caches
 
@@ -94,7 +105,13 @@ For non-default ROS distros, use the distro-specific build directory. For exampl
 build/orin-nx-16g-p3768-ros-lyrical/tmp/deploy/images/p3768-0000-p3767-0000/saha-image-robot-p3768-0000-p3767-0000.rootfs.tegraflash-tar.zst
 ```
 
-## Flash and first boot access
+The RDK X5 image is emitted as a compressed WIC disk image:
+
+```text
+build/rdk-x5/tmp/deploy/images/rdk-x5/saha-image-robot-rdk-x5.rootfs.wic.bz2
+```
+
+## Jetson flash and first boot access
 
 Unpack the `.tegraflash-tar.zst` archive on an x86-64 Linux host, put the Jetson in recovery mode with the USB OTG port connected, then run `initrd-flash`:
 
@@ -133,6 +150,17 @@ ip addr show wlan0
 
 If the WiFi interface name is not `wlan0`, use the name shown by `nmcli dev status`.
 
+## RDK X5 TF-card image
+
+Decompress and write the RDK X5 WIC image to the intended TF card. Confirm the device path before writing, because this overwrites the selected card:
+
+```bash
+bunzip2 -c saha-image-robot-rdk-x5.rootfs.wic.bz2 | \
+  sudo dd of=/dev/sdX bs=4M conv=fsync status=progress
+```
+
+The resulting card has the RDKOS-compatible MBR layout: a fixed 256 MiB `CONFIG` FAT volume beginning at 4 MiB, followed by the ext4 robot rootfs. Its boot script loads the kernel and device tree from the card; the build and image never write the board's persistent boot storage.
+
 Override cache/build locations with environment variables:
 
 ```bash
@@ -140,6 +168,14 @@ SAHA_BUILD_DIR=/data/yocto/build-orin \
 SAHA_DOWNLOADS_DIR=/data/yocto/downloads \
 SAHA_SSTATE_DIR=/data/yocto/sstate-cache \
 ./scripts/saha-build orin-nx-16g-p3768
+```
+
+For RDK X5, keep the BSP location explicit when overriding paths:
+
+```bash
+SAHA_META_D_ROBOTICS_DIR=/path/to/meta-d-robotics \
+SAHA_BUILD_DIR=/data/yocto/build-rdk-x5 \
+./scripts/saha-build rdk-x5
 ```
 
 Override the Docker image tag with:
@@ -217,13 +253,15 @@ This is a fast schema/include/config expansion check. A full `saha-build` still 
 
 ## Home Assistant container
 
-By default, `saha-image-robot` includes Docker, the official Home Assistant container launcher, and a preloaded Home Assistant container image. Disable that stack at build time with:
+On Jetson, `saha-image-robot` includes Docker, the official Home Assistant container launcher, and a preloaded Home Assistant container image by default. Disable that stack at build time with:
 
 ```bash
 SAHA_HOMEASSISTANT=0 ./scripts/saha-build orin-nx-16g-p3768
 ```
 
 This omits `docker`, the Home Assistant launcher, the preloaded tarball, and the extra rootfs space reserved for it. ROS 2, USB gadget networking, and WiFi support are unaffected.
+
+The RDK X5 image does not include this Jetson-specific packagegroup.
 
 During the Yocto build, `saha-homeassistant-container-image` installs the image at `/usr/share/saha/homeassistant/image.tar`. On first boot, `homeassistant-container.service` uses any existing local Docker image first, otherwise runs `docker load` from that tarball, and only pulls remotely when `SAHA_HOMEASSISTANT_PULL=1`.
 
@@ -296,10 +334,13 @@ systemctl restart homeassistant-container
 
 Supported ROS 2 distros:
 
-| `SAHA_ROS_DISTRO` | kas include |
-| --- | --- |
-| `jazzy` | `kas/include/ros-distro-jazzy.yml` |
-| `lyrical` | `kas/include/ros-distro-lyrical.yml` |
+| Target family | `SAHA_ROS_DISTRO` | kas include |
+| --- | --- | --- |
+| Jetson | `jazzy` | `kas/include/ros-distro-jazzy.yml` |
+| Jetson | `lyrical` | `kas/include/ros-distro-lyrical.yml` |
+| RDK X5 | `jazzy` | selected by `kas/targets/rdk-x5.yml` |
+
+On Jetson only:
 
 | `SAHA_HOMEASSISTANT` | Effect |
 | --- | --- |
@@ -315,7 +356,9 @@ ros2 --help
 
 ## Image scope
 
-The supported image target is `saha-image-robot`. It is layered on the reusable `saha-image-base` recipe and includes the Jetson BSP base, CUDA runtime libraries, OpenSSH bring-up access, USB device-mode networking support, NetworkManager with `nmcli` for WiFi, the configured ROS 2 runtime and CLI tools, and by default Docker with the official Home Assistant container launcher.
+The supported image target is `saha-image-robot`. On Jetson it is layered on the reusable `saha-image-base` recipe and includes the Jetson BSP base, CUDA runtime libraries, OpenSSH bring-up access, USB device-mode networking support, NetworkManager with `nmcli` for WiFi, the configured ROS 2 runtime and CLI tools, and by default Docker with the official Home Assistant container launcher.
+
+For RDK X5, the same image name is supplied by the isolated `meta-rdk-x5-saha` layer. It includes the RDK X5 kernel/DTBs, RDKOS-compatible `boot.scr`, fixed `CONFIG` partition, OpenSSH bring-up access, core robot tools, and the verified Jazzy ROS 2 runtime. It intentionally does not ship or flash a replacement bootloader.
 
 The image does not include CUDA samples or Jetson GPU container runtime tooling. Add `nvidia-container-toolkit` later through an optional image or kas include if GPU-backed containers are required; OE4T R39.2 removed the old `nvidia-docker` recipe.
 
