@@ -181,7 +181,7 @@ bunzip2 -c saha-image-robot-rdk-x5.rootfs-<timestamp>.wic.bz2 | \
   sudo dd of=/dev/sdX bs=4M conv=fsync status=progress
 ```
 
-The resulting card has the RDKOS-compatible MBR layout: a fixed 256 MiB `CONFIG` FAT volume beginning at 4 MiB, followed by the ext4 robot rootfs. Its boot script loads the kernel and device tree from the card; the build and image never write the board's persistent boot storage.
+The resulting card has the RDKOS-compatible MBR layout: a fixed 256 MiB `CONFIG` FAT volume beginning at 4 MiB, followed by the ext4 robot rootfs. Its boot script loads the kernel and device tree from the card; the build and image never write the board's persistent boot storage. On first boot, the included `systemd-networkd` profile requests DHCP on the board's `eth0` interface.
 
 For an accelerator image, select the timestamped `.wic.bz2` file from
 `build/rdk-x5-accelerators/tmp/deploy/images/rdk-x5/` instead.  The disk layout
@@ -389,7 +389,7 @@ ros2 --help
 
 The supported image target is `saha-image-robot`. On Jetson it is layered on the reusable `saha-image-base` recipe and includes the Jetson BSP base, CUDA runtime libraries, OpenSSH bring-up access, USB device-mode networking support, NetworkManager with `nmcli` for WiFi, the configured ROS 2 runtime and CLI tools, and by default Docker with the official Home Assistant container launcher.
 
-For RDK X5, the same image name is supplied by the isolated `meta-rdk-x5-saha` layer. It includes the RDK X5 kernel/DTBs, RDKOS-compatible `boot.scr`, fixed `CONFIG` partition, OpenSSH bring-up access, core robot tools, and the verified Jazzy ROS 2 runtime. It intentionally does not ship or flash a replacement bootloader.  `SAHA_X5_ACCELERATORS=1` adds only the pinned accelerator packagegroups through a separate kas include; it is rejected for Jetson targets and does not alter the default RDK X5 image.
+For RDK X5, the same image name is supplied by the isolated `meta-rdk-x5-saha` layer. It includes the RDK X5 kernel/DTBs, RDKOS-compatible `boot.scr`, fixed `CONFIG` partition, OpenSSH bring-up access, a deterministic `systemd-networkd` DHCP profile for `eth0`, core robot tools, and the verified Jazzy ROS 2 runtime. It intentionally does not ship or flash a replacement bootloader.  `SAHA_X5_ACCELERATORS=1` adds only the pinned accelerator packagegroups through a separate kas include; it is rejected for Jetson targets and does not alter the default RDK X5 image.
 
 The image does not include CUDA samples or Jetson GPU container runtime tooling. Add `nvidia-container-toolkit` later through an optional image or kas include if GPU-backed containers are required; OE4T R39.2 removed the old `nvidia-docker` recipe.
 
