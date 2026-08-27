@@ -345,6 +345,10 @@ grep -qxF 'WKS_FILE_DEPENDS = "${WKS_FILE_DEPENDS_DEFAULT} d-robotics-bootfiles"
   fail "RDK X5 image must preserve WIC tools and deploy boot assets before WIC"
 grep -q 'packagegroup-saha-rdk-x5-ros2' "$RDK_IMAGE" ||
   fail "RDK X5 image must install its ROS 2 runtime packagegroup"
+RDK_LTTNG_APPEND="$RDK_LAYER/recipes-kernel/lttng/lttng-tools_%.bbappend"
+[ -f "$RDK_LTTNG_APPEND" ] || fail "RDK X5 must carry its LTTng compatibility override"
+grep -qxF 'PTEST_ENABLED:pn-lttng-tools = "0"' "$RDK_LTTNG_APPEND" ||
+  fail "RDK X5 must exclude only the incompatible LTTng ptest package"
 grep -qxF 'bootloader --ptable msdos' "$RDK_WKS" ||
   fail "RDK X5 WIC layout must use the official MBR partition table"
 grep -qxF 'part /config --source rawcopy --sourceparams="file=hobot-config.vfat" --fstype=vfat --label CONFIG --align 4096 --fixed-size 256M' "$RDK_WKS" ||

@@ -161,6 +161,11 @@ bunzip2 -c saha-image-robot-rdk-x5.rootfs.wic.bz2 | \
 
 The resulting card has the RDKOS-compatible MBR layout: a fixed 256 MiB `CONFIG` FAT volume beginning at 4 MiB, followed by the ext4 robot rootfs. Its boot script loads the kernel and device tree from the card; the build and image never write the board's persistent boot storage.
 
+RDKOS 3.5.0's vendor 6.1.83 kernel is incompatible with Wrynose's optional
+`lttng-modules` ptest dependency. The RDK X5 layer therefore disables only the
+`lttng-tools` ptest package; regular LTTng userspace and ROS 2 tracing
+dependencies remain available, while kernel LTTng-module tests are excluded.
+
 Override cache/build locations with environment variables:
 
 ```bash
