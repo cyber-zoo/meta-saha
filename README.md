@@ -50,6 +50,23 @@ SAHA_META_D_ROBOTICS_DIR=/path/to/meta-d-robotics \
   ./scripts/saha-build rdk-x5
 ```
 
+Build the RDK X5 accelerator variant when BPU inference and the selected camera
+runtime are required:
+
+```bash
+SAHA_META_D_ROBOTICS_DIR=/path/to/meta-d-robotics \
+SAHA_X5_ACCELERATORS=1 \
+  ./scripts/saha-build rdk-x5
+```
+
+This opt-in variant uses the separately mounted `meta-d-robotics` layer and a
+separate build directory.  It installs the pinned D-Robotics DNN, multimedia,
+BPU hardware-I/O, and camera runtime packagegroups.  It supports the bundled
+`imx219`, `imx415`, `sc132gs`, and `sc230ai` sensor plugins; it does not make
+other sensor combinations supported.  The BPU module is built against the
+pinned RDKOS 3.5.0 Linux 6.1.83 ABI, rather than being copied across kernel
+versions.
+
 The script builds the Docker builder image, mounts persistent cache directories, then runs a target-specific kas graph. Jetson targets use:
 
 ```bash
@@ -72,6 +89,7 @@ Default host paths:
 | --- | --- |
 | `build/<target>/` | Default target-specific kas/bitbake build directory for `SAHA_ROS_DISTRO=jazzy` |
 | `build/<target>-ros-<distro>/` | Target-specific kas/bitbake build directory for non-default ROS distros such as `lyrical` |
+| `build/rdk-x5-accelerators/` | Isolated RDK X5 build directory when `SAHA_X5_ACCELERATORS=1` |
 | `downloads/` | Shared Yocto download cache |
 | `sstate-cache/` | Shared Yocto sstate cache |
 
@@ -108,8 +126,12 @@ build/orin-nx-16g-p3768-ros-lyrical/tmp/deploy/images/p3768-0000-p3767-0000/saha
 The RDK X5 image is emitted as a compressed WIC disk image:
 
 ```text
-build/rdk-x5/tmp/deploy/images/rdk-x5/saha-image-robot-rdk-x5.rootfs.wic.bz2
+build/rdk-x5/tmp/deploy/images/rdk-x5/saha-image-robot-rdk-x5.rootfs-*.wic.bz2
 ```
+
+With `SAHA_X5_ACCELERATORS=1`, use the equivalent artifact under
+`build/rdk-x5-accelerators/tmp/deploy/images/rdk-x5/`.  Keeping that output
+separate prevents an accelerator build from overwriting the base-image result.
 
 ## Jetson flash and first boot access
 
@@ -155,11 +177,15 @@ If the WiFi interface name is not `wlan0`, use the name shown by `nmcli dev stat
 Decompress and write the RDK X5 WIC image to the intended TF card. Confirm the device path before writing, because this overwrites the selected card:
 
 ```bash
-bunzip2 -c saha-image-robot-rdk-x5.rootfs.wic.bz2 | \
+bunzip2 -c saha-image-robot-rdk-x5.rootfs-<timestamp>.wic.bz2 | \
   sudo dd of=/dev/sdX bs=4M conv=fsync status=progress
 ```
 
 The resulting card has the RDKOS-compatible MBR layout: a fixed 256 MiB `CONFIG` FAT volume beginning at 4 MiB, followed by the ext4 robot rootfs. Its boot script loads the kernel and device tree from the card; the build and image never write the board's persistent boot storage.
+
+For an accelerator image, select the timestamped `.wic.bz2` file from
+`build/rdk-x5-accelerators/tmp/deploy/images/rdk-x5/` instead.  The disk layout
+and boot contract are identical to the base RDK X5 image.
 
 RDKOS 3.5.0's vendor 6.1.83 kernel is incompatible with Wrynose's optional
 `lttng-modules` ptest dependency. The RDK X5 layer therefore disables only the
@@ -363,7 +389,7 @@ ros2 --help
 
 The supported image target is `saha-image-robot`. On Jetson it is layered on the reusable `saha-image-base` recipe and includes the Jetson BSP base, CUDA runtime libraries, OpenSSH bring-up access, USB device-mode networking support, NetworkManager with `nmcli` for WiFi, the configured ROS 2 runtime and CLI tools, and by default Docker with the official Home Assistant container launcher.
 
-For RDK X5, the same image name is supplied by the isolated `meta-rdk-x5-saha` layer. It includes the RDK X5 kernel/DTBs, RDKOS-compatible `boot.scr`, fixed `CONFIG` partition, OpenSSH bring-up access, core robot tools, and the verified Jazzy ROS 2 runtime. It intentionally does not ship or flash a replacement bootloader.
+For RDK X5, the same image name is supplied by the isolated `meta-rdk-x5-saha` layer. It includes the RDK X5 kernel/DTBs, RDKOS-compatible `boot.scr`, fixed `CONFIG` partition, OpenSSH bring-up access, core robot tools, and the verified Jazzy ROS 2 runtime. It intentionally does not ship or flash a replacement bootloader.  `SAHA_X5_ACCELERATORS=1` adds only the pinned accelerator packagegroups through a separate kas include; it is rejected for Jetson targets and does not alter the default RDK X5 image.
 
 The image does not include CUDA samples or Jetson GPU container runtime tooling. Add `nvidia-container-toolkit` later through an optional image or kas include if GPU-backed containers are required; OE4T R39.2 removed the old `nvidia-docker` recipe.
 
