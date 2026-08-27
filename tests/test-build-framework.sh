@@ -60,6 +60,28 @@ contains "$rdk_dry_run_output" "KAS_WORK_DIR=/work/build/rdk-x5"
 contains "$rdk_dry_run_output" ":/work/meta-d-robotics:ro"
 rmdir "$rdk_bsp_dir"
 
+rdk_accelerator_bsp_dir="$(mktemp -d)"
+rdk_accelerator_dry_run_output="$(
+  SAHA_DRY_RUN=1 \
+  SAHA_X5_ACCELERATORS=1 \
+  SAHA_META_D_ROBOTICS_DIR="$rdk_accelerator_bsp_dir" \
+  "$ROOT_DIR/scripts/saha-build" rdk-x5
+)"
+contains "$rdk_accelerator_dry_run_output" "kas build kas/targets/rdk-x5.yml:kas/include/rdk-x5-accelerators.yml"
+contains "$rdk_accelerator_dry_run_output" "/work/build/rdk-x5-accelerators"
+contains "$rdk_accelerator_dry_run_output" "KAS_WORK_DIR=/work/build/rdk-x5-accelerators"
+rmdir "$rdk_accelerator_bsp_dir"
+
+if SAHA_DRY_RUN=1 SAHA_X5_ACCELERATORS=1 "$ROOT_DIR/scripts/saha-build" orin-nx-16g-p3768 >/tmp/saha-x5-accelerators-jetson.out 2>&1; then
+  fail "Jetson unexpectedly accepted the RDK X5 accelerator switch"
+fi
+contains "$(cat /tmp/saha-x5-accelerators-jetson.out)" "SAHA_X5_ACCELERATORS is supported only for rdk-x5"
+
+if SAHA_DRY_RUN=1 SAHA_X5_ACCELERATORS=yes SAHA_META_D_ROBOTICS_DIR="$ROOT_DIR" "$ROOT_DIR/scripts/saha-build" rdk-x5 >/tmp/saha-x5-accelerators-invalid.out 2>&1; then
+  fail "RDK X5 unexpectedly accepted an invalid accelerator switch"
+fi
+contains "$(cat /tmp/saha-x5-accelerators-invalid.out)" "SAHA_X5_ACCELERATORS must be 0 or 1"
+
 if SAHA_DRY_RUN=1 "$ROOT_DIR/scripts/saha-build" rdk-x5 >/tmp/saha-rdk-x5-missing-layer.out 2>&1; then
   fail "RDK X5 build unexpectedly succeeded without its BSP layer"
 fi
@@ -303,9 +325,11 @@ grep -q 'PREFERRED_PROVIDER_edk2-nvidia-standalone-mm = "edk2-nvidia-standalone-
 RDK_REPOS="$ROOT_DIR/kas/include/repos-rdk-x5-wrynose.yml"
 RDK_BASE="$ROOT_DIR/kas/include/rdk-x5-base.yml"
 RDK_TARGET="$ROOT_DIR/kas/targets/rdk-x5.yml"
+RDK_ACCELERATORS="$ROOT_DIR/kas/include/rdk-x5-accelerators.yml"
 [ -f "$RDK_REPOS" ] || fail "RDK X5 kas repository graph must exist"
 [ -f "$RDK_BASE" ] || fail "RDK X5 kas base configuration must exist"
 [ -f "$RDK_TARGET" ] || fail "RDK X5 kas target configuration must exist"
+[ -f "$RDK_ACCELERATORS" ] || fail "RDK X5 accelerator kas overlay must exist"
 grep -A6 '^  openembedded-core:' "$RDK_REPOS" |
   grep -qxF '    commit: 5d1aa5c806c061a2994f4decb59016610f093213' ||
   fail "RDK X5 graph must pin OpenEmbedded-Core"
@@ -331,6 +355,8 @@ grep -qxF 'distro: saha-rdk-x5' "$RDK_BASE" ||
   fail "RDK X5 graph must select the RDK-specific distro"
 grep -qxF 'machine: rdk-x5' "$RDK_TARGET" ||
   fail "RDK X5 target must select the RDK X5 machine"
+grep -qxF '    CORE_IMAGE_BASE_INSTALL:append = " packagegroup-rdk-x5-accelerators"' "$RDK_ACCELERATORS" ||
+  fail "RDK X5 accelerator overlay must install the accelerator packagegroup"
 
 RDK_LAYER="$ROOT_DIR/saha-layers/meta-rdk-x5-saha"
 RDK_IMAGE="$RDK_LAYER/recipes-saha/images/saha-image-robot.bb"

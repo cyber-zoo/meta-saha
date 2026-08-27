@@ -1,0 +1,9 @@
+header:
+  version: 17
+
+# Opt-in only: this pulls the pinned D-Robotics BPU/DNN and camera runtime
+# packagegroups into the RDK X5 robot image.  Keep it separate from the base
+# graph so an accelerator build cannot perturb the smaller bring-up image.
+local_conf_header:
+  rdk-x5-accelerators: |
+    CORE_IMAGE_BASE_INSTALL:append = " packagegroup-rdk-x5-accelerators"

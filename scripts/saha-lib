@@ -120,19 +120,44 @@ saha_homeassistant_enabled() {
   esac
 }
 
+saha_x5_accelerators_mode() {
+  case "${SAHA_X5_ACCELERATORS:-0}" in
+    ""|0)
+      printf '%s\n' "0"
+      ;;
+    1)
+      printf '%s\n' "1"
+      ;;
+    *)
+      printf 'SAHA_X5_ACCELERATORS must be 0 or 1 (received: %s)\n' \
+        "${SAHA_X5_ACCELERATORS:-}" >&2
+      return 2
+      ;;
+  esac
+}
+
 saha_kas_config_for_target() {
   local target=$1
-  local ros_distro
-  local kas_config
+  local ros_distro x5_accelerators kas_config
   ros_distro="$(saha_current_ros_distro)" || return $?
+  x5_accelerators="$(saha_x5_accelerators_mode)" || return $?
 
   if [ "$target" = "rdk-x5" ]; then
     if [ "$ros_distro" != "jazzy" ]; then
       printf 'RDK X5 supports only ROS 2 Jazzy (requested: %s)\n' "$ros_distro" >&2
       return 2
     fi
+    if [ "$x5_accelerators" = "1" ]; then
+      printf 'kas/targets/rdk-x5.yml:kas/include/rdk-x5-accelerators.yml\n'
+      return 0
+    fi
     printf 'kas/targets/rdk-x5.yml\n'
     return 0
+  fi
+
+  if [ "$x5_accelerators" = "1" ]; then
+    printf 'SAHA_X5_ACCELERATORS is supported only for rdk-x5\n' >&2
+    return 2
   fi
 
   saha_require_homeassistant_setting || return $?
@@ -183,9 +208,14 @@ saha_prepare_docker_env() {
 saha_build_dir() {
   local root_dir=$1
   local target=$2
-  local ros_distro
+  local ros_distro x5_accelerators
+  x5_accelerators="$(saha_x5_accelerators_mode)" || return $?
   if [ -n "${SAHA_BUILD_DIR:-}" ]; then
     printf '%s\n' "$SAHA_BUILD_DIR"
+    return 0
+  fi
+  if [ "$target" = "rdk-x5" ] && [ "$x5_accelerators" = "1" ]; then
+    printf '%s\n' "$root_dir/build/rdk-x5-accelerators"
     return 0
   fi
   ros_distro="$(saha_current_ros_distro)" || return $?
@@ -194,6 +224,18 @@ saha_build_dir() {
     return 0
   fi
   printf '%s\n' "$root_dir/build/$target-ros-$ros_distro"
+}
+
+saha_container_build_dir() {
+  local target=$1
+  local x5_accelerators
+  x5_accelerators="$(saha_x5_accelerators_mode)" || return $?
+
+  if [ "$target" = "rdk-x5" ] && [ "$x5_accelerators" = "1" ]; then
+    printf '%s\n' "/work/build/rdk-x5-accelerators"
+    return 0
+  fi
+  printf '%s\n' "/work/build/$target"
 }
 
 saha_downloads_dir() {
@@ -334,8 +376,9 @@ saha_docker_args() {
   local root_dir=$1
   local target=$2
   local interactive=$3
-  local build_dir downloads_dir sstate_dir image meta_d_robotics_dir
+  local build_dir container_build_dir downloads_dir sstate_dir image meta_d_robotics_dir
   build_dir="$(saha_build_dir "$root_dir" "$target")" || return $?
+  container_build_dir="$(saha_container_build_dir "$target")" || return $?
   downloads_dir="$(saha_downloads_dir "$root_dir")"
   sstate_dir="$(saha_sstate_dir "$root_dir")"
   image="$(saha_image_name)"
@@ -360,8 +403,8 @@ saha_docker_args() {
     "--user" "$(id -u):$(id -g)" \
     "-e" "USER=builder" \
     "-e" "HOME=/work/home" \
-    "-e" "KAS_BUILD_DIR=/work/build/$target" \
-    "-e" "KAS_WORK_DIR=/work/build/$target" \
+    "-e" "KAS_BUILD_DIR=$container_build_dir" \
+    "-e" "KAS_WORK_DIR=$container_build_dir" \
     "-e" "DL_DIR=/work/downloads" \
     "-e" "SSTATE_DIR=/work/sstate-cache"
 
@@ -384,7 +427,7 @@ saha_docker_args() {
 
   printf '%s\n' \
     "-v" "$root_dir:/work/meta-saha" \
-    "-v" "$build_dir:/work/build/$target" \
+    "-v" "$build_dir:$container_build_dir" \
     "-v" "$downloads_dir:/work/downloads" \
     "-v" "$sstate_dir:/work/sstate-cache"
 
