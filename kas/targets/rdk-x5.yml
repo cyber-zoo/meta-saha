@@ -1,0 +1,6 @@
+header:
+  version: 17
+  includes:
+    - kas/include/rdk-x5-base.yml
+
+machine: rdk-x5

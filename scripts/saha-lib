@@ -11,6 +11,7 @@ saha_targets() {
 orin-nx-16g-p3768|p3768-0000-p3767-0000|Jetson Orin NX 16GB P3767-0000 module in P3768 carrier
 agx-thor-devkit|jetson-agx-thor-devkit|AGX Thor devkit P3834-0008 module in P4071-0000 carrier with NVMe
 agx-orin-devkit|jetson-agx-orin-devkit|AGX Orin devkit P3701-0000 module in P3737-0000 carrier
+rdk-x5|rdk-x5|D-Robotics RDK X5 development board
 TARGETS
 }
 
@@ -124,12 +125,45 @@ saha_kas_config_for_target() {
   local ros_distro
   local kas_config
   ros_distro="$(saha_current_ros_distro)" || return $?
+
+  if [ "$target" = "rdk-x5" ]; then
+    if [ "$ros_distro" != "jazzy" ]; then
+      printf 'RDK X5 supports only ROS 2 Jazzy (requested: %s)\n' "$ros_distro" >&2
+      return 2
+    fi
+    printf 'kas/targets/rdk-x5.yml\n'
+    return 0
+  fi
+
   saha_require_homeassistant_setting || return $?
   kas_config="kas/targets/${target}.yml:kas/include/ros-distro-${ros_distro}.yml"
   if saha_homeassistant_enabled; then
     kas_config="${kas_config}:kas/include/homeassistant-container.yml"
   fi
   printf '%s\n' "$kas_config"
+}
+
+saha_meta_d_robotics_dir() {
+  local requested=${SAHA_META_D_ROBOTICS_DIR:-}
+
+  if [ -z "$requested" ]; then
+    printf 'SAHA_META_D_ROBOTICS_DIR must point to meta-d-robotics for rdk-x5\n' >&2
+    return 2
+  fi
+  if [ ! -d "$requested" ]; then
+    printf 'SAHA_META_D_ROBOTICS_DIR is not a directory: %s\n' "$requested" >&2
+    return 2
+  fi
+
+  (cd -- "$requested" >/dev/null 2>&1 && pwd -P)
+}
+
+saha_validate_target_inputs() {
+  local target=$1
+
+  if [ "$target" = "rdk-x5" ]; then
+    saha_meta_d_robotics_dir >/dev/null
+  fi
 }
 
 saha_image_name() {
@@ -300,11 +334,15 @@ saha_docker_args() {
   local root_dir=$1
   local target=$2
   local interactive=$3
-  local build_dir downloads_dir sstate_dir image
+  local build_dir downloads_dir sstate_dir image meta_d_robotics_dir
   build_dir="$(saha_build_dir "$root_dir" "$target")" || return $?
   downloads_dir="$(saha_downloads_dir "$root_dir")"
   sstate_dir="$(saha_sstate_dir "$root_dir")"
   image="$(saha_image_name)"
+
+  if [ "$target" = "rdk-x5" ]; then
+    meta_d_robotics_dir="$(saha_meta_d_robotics_dir)" || return $?
+  fi
 
   mkdir -p "$build_dir" "$downloads_dir" "$sstate_dir"
 
@@ -348,7 +386,13 @@ saha_docker_args() {
     "-v" "$root_dir:/work/meta-saha" \
     "-v" "$build_dir:/work/build/$target" \
     "-v" "$downloads_dir:/work/downloads" \
-    "-v" "$sstate_dir:/work/sstate-cache" \
+    "-v" "$sstate_dir:/work/sstate-cache"
+
+  if [ "$target" = "rdk-x5" ]; then
+    printf '%s\n' "-v" "$meta_d_robotics_dir:/work/meta-d-robotics:ro"
+  fi
+
+  printf '%s\n' \
     "-w" "/work/meta-saha" \
     "$image"
 }
@@ -358,11 +402,12 @@ saha_run_docker() {
   local target=$2
   local interactive=$3
   shift 3
-  local docker_cmd
+  local docker_args_output docker_cmd
   docker_cmd=(docker)
+  docker_args_output="$(saha_docker_args "$root_dir" "$target" "$interactive")" || return $?
   while IFS= read -r arg; do
     docker_cmd+=("$arg")
-  done < <(saha_docker_args "$root_dir" "$target" "$interactive")
+  done <<< "$docker_args_output"
   docker_cmd+=("$@")
 
   if [ "${SAHA_DRY_RUN:-0}" = "1" ]; then

@@ -21,6 +21,8 @@ contains "$targets_output" "agx-thor-devkit"
 contains "$targets_output" "jetson-agx-thor-devkit"
 contains "$targets_output" "agx-orin-devkit"
 contains "$targets_output" "jetson-agx-orin-devkit"
+contains "$targets_output" "rdk-x5"
+contains "$targets_output" "D-Robotics RDK X5"
 if [[ "$targets_output" == *"ros"* ]] || [[ "$targets_output" == *"ROS"* ]]; then
   fail "supported target list must not include ROS targets"
 fi
@@ -45,6 +47,28 @@ contains "$dry_run_output" "/work/sstate-cache"
 if [[ "$dry_run_output" == *" -it "* ]]; then
   fail "non-interactive build command should not allocate a TTY"
 fi
+
+rdk_bsp_dir="$(mktemp -d)"
+rdk_dry_run_output="$(
+  SAHA_DRY_RUN=1 \
+  SAHA_META_D_ROBOTICS_DIR="$rdk_bsp_dir" \
+  "$ROOT_DIR/scripts/saha-build" rdk-x5
+)"
+contains "$rdk_dry_run_output" "kas build kas/targets/rdk-x5.yml"
+contains "$rdk_dry_run_output" "/work/build/rdk-x5"
+contains "$rdk_dry_run_output" "KAS_WORK_DIR=/work/build/rdk-x5"
+contains "$rdk_dry_run_output" ":/work/meta-d-robotics:ro"
+rmdir "$rdk_bsp_dir"
+
+if SAHA_DRY_RUN=1 "$ROOT_DIR/scripts/saha-build" rdk-x5 >/tmp/saha-rdk-x5-missing-layer.out 2>&1; then
+  fail "RDK X5 build unexpectedly succeeded without its BSP layer"
+fi
+contains "$(cat /tmp/saha-rdk-x5-missing-layer.out)" "SAHA_META_D_ROBOTICS_DIR must point to meta-d-robotics"
+
+if SAHA_DRY_RUN=1 SAHA_ROS_DISTRO=lyrical "$ROOT_DIR/scripts/saha-build" rdk-x5 >/tmp/saha-rdk-x5-lyrical.out 2>&1; then
+  fail "RDK X5 unexpectedly accepted ROS 2 Lyrical"
+fi
+contains "$(cat /tmp/saha-rdk-x5-lyrical.out)" "RDK X5 supports only ROS 2 Jazzy"
 
 tuning_dry_run_output="$(
   env \
@@ -276,6 +300,71 @@ grep -q 'BB_HASHSERVE_DB_DIR ?= "${SSTATE_DIR}"' "$ROOT_DIR/kas/include/base.yml
 grep -q 'PREFERRED_PROVIDER_edk2-nvidia-standalone-mm = "edk2-nvidia-standalone-mm-prebuilt"' "$ROOT_DIR/kas/include/base.yml" ||
   fail "default BSP build should use OE4T prebuilt standalone-mm provider"
 
+RDK_REPOS="$ROOT_DIR/kas/include/repos-rdk-x5-wrynose.yml"
+RDK_BASE="$ROOT_DIR/kas/include/rdk-x5-base.yml"
+RDK_TARGET="$ROOT_DIR/kas/targets/rdk-x5.yml"
+[ -f "$RDK_REPOS" ] || fail "RDK X5 kas repository graph must exist"
+[ -f "$RDK_BASE" ] || fail "RDK X5 kas base configuration must exist"
+[ -f "$RDK_TARGET" ] || fail "RDK X5 kas target configuration must exist"
+grep -A6 '^  openembedded-core:' "$RDK_REPOS" |
+  grep -qxF '    commit: 5d1aa5c806c061a2994f4decb59016610f093213' ||
+  fail "RDK X5 graph must pin OpenEmbedded-Core"
+grep -A6 '^  bitbake:' "$RDK_REPOS" |
+  grep -qxF '    commit: acfe02fa38b5da9e6a36c6cedcf91d4fcbefbfbd' ||
+  fail "RDK X5 graph must pin BitBake"
+grep -A6 '^  meta-openembedded:' "$RDK_REPOS" |
+  grep -qxF '    commit: 100027977216601000cbefc42c2ff6cf667e7b5e' ||
+  fail "RDK X5 graph must pin meta-openembedded"
+grep -A6 '^  meta-ros:' "$RDK_REPOS" |
+  grep -qxF '    commit: dbb05e0b4430cd26dc2a9973cc4d70bb46d6b354' ||
+  fail "RDK X5 graph must pin meta-ros"
+grep -A4 '^  meta-d-robotics:' "$RDK_REPOS" |
+  grep -qxF '    path: /work/meta-d-robotics' ||
+  fail "RDK X5 graph must use the Docker-mounted BSP layer"
+grep -A4 '^  meta-saha:' "$RDK_REPOS" |
+  grep -qxF '      saha-layers/meta-rdk-x5-saha:' ||
+  fail "RDK X5 graph must select its isolated Saha layer"
+if rg -n '^[[:space:]]*(meta-tegra:|distro:[[:space:]]+tegra-saha)' "$RDK_REPOS" "$RDK_BASE" "$RDK_TARGET"; then
+  fail "RDK X5 kas graph must not include Tegra metadata"
+fi
+grep -qxF 'distro: saha-rdk-x5' "$RDK_BASE" ||
+  fail "RDK X5 graph must select the RDK-specific distro"
+grep -qxF 'machine: rdk-x5' "$RDK_TARGET" ||
+  fail "RDK X5 target must select the RDK X5 machine"
+
+RDK_LAYER="$ROOT_DIR/saha-layers/meta-rdk-x5-saha"
+RDK_IMAGE="$RDK_LAYER/recipes-saha/images/saha-image-robot.bb"
+RDK_WKS="$RDK_LAYER/recipes-saha/images/rdk-x5.wks.in"
+[ -f "$RDK_LAYER/conf/layer.conf" ] || fail "RDK X5 Saha layer configuration must exist"
+[ -f "$RDK_LAYER/conf/distro/saha-rdk-x5.conf" ] || fail "RDK X5 distro configuration must exist"
+[ -f "$RDK_IMAGE" ] || fail "RDK X5 robot image recipe must exist"
+[ -f "$RDK_WKS" ] || fail "RDK X5 WIC layout must exist"
+grep -qxF 'WKS_FILE = "rdk-x5.wks.in"' "$RDK_IMAGE" ||
+  fail "RDK X5 image must select its WIC layout"
+grep -qxF 'WKS_FILE_DEPENDS = "d-robotics-bootfiles"' "$RDK_IMAGE" ||
+  fail "RDK X5 image must deploy the RDK boot assets before WIC"
+grep -q 'packagegroup-saha-rdk-x5-ros2' "$RDK_IMAGE" ||
+  fail "RDK X5 image must install its ROS 2 runtime packagegroup"
+grep -qxF 'bootloader --ptable msdos' "$RDK_WKS" ||
+  fail "RDK X5 WIC layout must use the official MBR partition table"
+grep -qxF 'part /config --source rawcopy --sourceparams="file=hobot-config.vfat" --fstype=vfat --label CONFIG --align 4096 --fixed-size 256M' "$RDK_WKS" ||
+  fail "RDK X5 WIC layout must retain the fixed CONFIG partition"
+grep -qxF 'part / --source rootfs --fstype=ext4 --label rootfs --align 4 --use-uuid' "$RDK_WKS" ||
+  fail "RDK X5 WIC layout must place rootfs after CONFIG"
+if rg -n -i '(^|[;[:space:]])(sf|nand|mtd|mmc)[[:space:]]+(erase|write)' "$RDK_WKS" "$RDK_IMAGE"; then
+  fail "RDK X5 image metadata must not write persistent boot storage"
+fi
+if rg -n --fixed-strings '/home/' "$RDK_LAYER" "$RDK_REPOS" "$RDK_BASE" "$RDK_TARGET"; then
+  fail "RDK X5 metadata must not reference a developer-local path"
+fi
+
+RDK_ROS_PACKAGEGROUP="$RDK_LAYER/recipes-saha/packagegroups/packagegroup-saha-rdk-x5-ros2.bb"
+[ -f "$RDK_ROS_PACKAGEGROUP" ] || fail "RDK X5 ROS 2 packagegroup must exist"
+grep -q 'ros-base' "$RDK_ROS_PACKAGEGROUP" ||
+  fail "RDK X5 ROS 2 packagegroup must install ros-base"
+grep -q 'ros2cli-common-extensions' "$RDK_ROS_PACKAGEGROUP" ||
+  fail "RDK X5 ROS 2 packagegroup must install ROS 2 CLI extensions"
+
 grep -A2 '^target:$' "$ROOT_DIR/kas/include/base.yml" |
   grep -qxF '  - saha-image-robot' ||
   fail "default kas build target must be saha-image-robot"
@@ -436,5 +525,12 @@ contains "$validate_dry_run_output" "kas dump --skip repo_setup_loop --skip fini
 
 lyrical_validate_dry_run_output="$(SAHA_DRY_RUN=1 SAHA_ROS_DISTRO=lyrical "$ROOT_DIR/scripts/saha-validate" agx-orin-devkit)"
 contains "$lyrical_validate_dry_run_output" "kas dump --skip repo_setup_loop --skip finish_setup_repos --skip repos_checkout --skip repos_apply_patches kas/targets/agx-orin-devkit.yml:kas/include/ros-distro-lyrical.yml:kas/include/homeassistant-container.yml"
+
+rdk_validate_dry_run_output="$(
+  SAHA_DRY_RUN=1 \
+  SAHA_META_D_ROBOTICS_DIR=/tmp \
+  "$ROOT_DIR/scripts/saha-validate" rdk-x5
+)"
+contains "$rdk_validate_dry_run_output" "kas dump --skip repo_setup_loop --skip finish_setup_repos --skip repos_checkout --skip repos_apply_patches kas/targets/rdk-x5.yml"
 
 echo "PASS: build framework contract"

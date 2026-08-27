@@ -9,9 +9,11 @@ usage() {
   cat <<'USAGE'
 Usage: scripts/saha-build <target>
 
-Build saha-image-robot for a supported Jetson target inside Docker.
-Set SAHA_ROS_DISTRO=jazzy or SAHA_ROS_DISTRO=lyrical to choose the ROS 2 distro.
-Set SAHA_HOMEASSISTANT=0 to omit Docker and the preloaded Home Assistant image.
+Build saha-image-robot for a supported target inside Docker.
+Jetson targets support ROS 2 Jazzy and Lyrical; set SAHA_HOMEASSISTANT=0 to
+omit their Docker and preloaded Home Assistant image. RDK X5 is pinned to Jazzy,
+does not include that Jetson-only packagegroup, and requires
+SAHA_META_D_ROBOTICS_DIR to point to its BSP layer.
 Run scripts/saha-targets to list targets.
 USAGE
 }
@@ -29,6 +31,7 @@ fi
 TARGET=$1
 saha_require_target "$TARGET" >/dev/null
 KAS_CONFIG="$(saha_kas_config_for_target "$TARGET")"
+saha_validate_target_inputs "$TARGET"
 ROOT_DIR="$(saha_repo_root)"
 saha_prepare_docker_env "$ROOT_DIR"
 saha_apply_build_tuning_defaults

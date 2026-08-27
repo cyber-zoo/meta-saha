@@ -1,0 +1,53 @@
+header:
+  version: 17
+
+# Keep the RDK X5 graph independent from the OE4T/meta-tegra graph.  This
+# mirrors meta-tegra's release-series gating: all shared layers are pinned to
+# revisions verified with the RDK X5 Wrynose BSP rather than following heads.
+repos:
+  openembedded-core:
+    path: repos/openembedded-core
+    url: https://github.com/openembedded/openembedded-core.git
+    branch: wrynose
+    commit: 5d1aa5c806c061a2994f4decb59016610f093213
+    layers:
+      meta:
+
+  bitbake:
+    path: repos/bitbake
+    url: https://github.com/openembedded/bitbake.git
+    branch: "2.18"
+    commit: acfe02fa38b5da9e6a36c6cedcf91d4fcbefbfbd
+    layers:
+      .: disabled
+
+  meta-openembedded:
+    path: repos/meta-openembedded
+    url: https://git.openembedded.org/meta-openembedded
+    branch: wrynose
+    commit: 100027977216601000cbefc42c2ff6cf667e7b5e
+    layers:
+      meta-filesystems:
+      meta-networking:
+      meta-oe:
+      meta-python:
+
+  meta-ros:
+    path: repos/meta-ros
+    url: https://github.com/ros/meta-ros.git
+    branch: wrynose
+    commit: dbb05e0b4430cd26dc2a9973cc4d70bb46d6b354
+    layers:
+      meta-ros-common:
+      meta-ros2:
+      meta-ros2-jazzy:
+
+  meta-saha:
+    path: /work/meta-saha
+    layers:
+      saha-layers/meta-rdk-x5-saha:
+
+  meta-d-robotics:
+    path: /work/meta-d-robotics
+    layers:
+      .:
