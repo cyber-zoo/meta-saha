@@ -341,8 +341,8 @@ RDK_WKS="$RDK_LAYER/recipes-saha/images/rdk-x5.wks.in"
 [ -f "$RDK_WKS" ] || fail "RDK X5 WIC layout must exist"
 grep -qxF 'WKS_FILE = "rdk-x5.wks.in"' "$RDK_IMAGE" ||
   fail "RDK X5 image must select its WIC layout"
-grep -qxF 'WKS_FILE_DEPENDS = "d-robotics-bootfiles"' "$RDK_IMAGE" ||
-  fail "RDK X5 image must deploy the RDK boot assets before WIC"
+grep -qxF 'WKS_FILE_DEPENDS = "${WKS_FILE_DEPENDS_DEFAULT} d-robotics-bootfiles"' "$RDK_IMAGE" ||
+  fail "RDK X5 image must preserve WIC tools and deploy boot assets before WIC"
 grep -q 'packagegroup-saha-rdk-x5-ros2' "$RDK_IMAGE" ||
   fail "RDK X5 image must install its ROS 2 runtime packagegroup"
 grep -qxF 'bootloader --ptable msdos' "$RDK_WKS" ||
