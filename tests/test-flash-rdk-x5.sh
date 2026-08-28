@@ -73,7 +73,7 @@ for required_fragment in \
   'findmnt -rn -o SOURCE,TARGET' \
   'bzip2 -t' \
   'expected RDK X5 WIC MBR signature' \
-  'blockdev --getsize64' \
+  'lsblk -bdn -o SIZE' \
   'a TTY is required for a real write' \
   'conv=fsync' \
   'partprobe' \
