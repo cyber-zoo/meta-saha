@@ -67,6 +67,22 @@ other sensor combinations supported.  The BPU module is built against the
 pinned RDKOS 3.5.0 Linux 6.1.83 ABI, rather than being copied across kernel
 versions.
 
+The accelerator image also includes `saha-rdk-x5-bpu-smoke`, an end-to-end
+driver check built around D-Robotics' official RDK X5 MobileNetV1 NV12 BPU
+model.  On the booted accelerator image, run:
+
+```bash
+saha-rdk-x5-bpu-smoke
+```
+
+It allocates DNN/BPU memory, submits one inference, waits for completion,
+checks that `bpu_hw_io_x5` is loaded, and prints `BPU_SMOKE_PASS` with an output
+hash.  The bundled input is all-black NV12, so this is a BPU driver/runtime
+smoke test rather than an image-classification accuracy test.  A nonzero exit
+and `BPU_SMOKE_FAIL stage=...` identify the failed runtime stage.  The base RDK
+X5 image deliberately does not include this command, the DNN runtime, or the
+BPU driver.
+
 The script builds the Docker builder image, mounts persistent cache directories, then runs a target-specific kas graph. Jetson targets use:
 
 ```bash
