@@ -154,6 +154,8 @@ With `SAHA_X5_ACCELERATORS=1`, use the equivalent artifact under
 `build/rdk-x5-accelerators/tmp/deploy/images/rdk-x5/`.  Keeping that output
 separate prevents an accelerator build from overwriting the base-image result.
 
+All Saha robot images use `sahaWorld` as the default static hostname.
+
 ## Jetson flash and first boot access
 
 Unpack the `.tegraflash-tar.zst` archive on an x86-64 Linux host, put the Jetson in recovery mode with the USB OTG port connected, then run `initrd-flash`:
@@ -166,7 +168,7 @@ lsusb -d 0955:
 ./initrd-flash
 ```
 
-After first boot, the hostname is `soybean`. The image includes `l4t-usb-device-mode`, which creates the target-side USB network endpoint at `192.168.55.1` and serves the host side by DHCP. For bring-up, root login is enabled with an empty password:
+After first boot, the image includes `l4t-usb-device-mode`, which creates the target-side USB network endpoint at `192.168.55.1` and serves the host side by DHCP. For bring-up, root login is enabled with an empty password:
 
 ```bash
 ssh root@192.168.55.1

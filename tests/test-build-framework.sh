@@ -497,8 +497,14 @@ LTTNG_TOOLS_APPEND="$ROOT_DIR/saha-layers/meta-tegra-saha/recipes-support/lttng/
 grep -qxF 'LTTNGMODULES = ""' "$LTTNG_TOOLS_APPEND" ||
   fail "lttng-tools ptest dependencies must not pull unsupported lttng kernel module"
 
-grep -qxF 'hostname = "soybean"' "$ROOT_DIR/saha-layers/meta-tegra-saha/recipes-core/base-files/base-files_%.bbappend" ||
-  fail "base-files must set the device hostname to soybean"
+for hostname_append in \
+  "$ROOT_DIR/saha-layers/meta-tegra-saha/recipes-core/base-files/base-files_%.bbappend" \
+  "$RDK_LAYER/recipes-core/base-files/base-files_%.bbappend"
+do
+  [ -f "$hostname_append" ] || fail "Saha base-files hostname override must exist: $hostname_append"
+  grep -qxF 'hostname = "sahaWorld"' "$hostname_append" ||
+    fail "Saha images must set the default device hostname to sahaWorld: $hostname_append"
+done
 
 USB_DEVICE_MODE_APPEND="$ROOT_DIR/saha-layers/meta-tegra-saha/recipes-bsp/l4t-usb-device-mode/l4t-usb-device-mode.bbappend"
 [ -f "$USB_DEVICE_MODE_APPEND" ] ||
