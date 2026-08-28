@@ -68,20 +68,25 @@ pinned RDKOS 3.5.0 Linux 6.1.83 ABI, rather than being copied across kernel
 versions.
 
 The accelerator image also includes `saha-rdk-x5-bpu-smoke`, an end-to-end
-driver check built around D-Robotics' official RDK X5 MobileNetV1 NV12 BPU
-model.  On the booted accelerator image, run:
+driver check built around D-Robotics' official RDK X5 HIMLoco policy for a
+Unitree Go2. The bundled Bayes-e model and source-indexed observation are
+checksum-pinned; D-Robotics validates this model with DNN Runtime 1.24.5 and
+HBRT 3.15.55, matching this image's pinned accelerator runtime. On the booted
+accelerator image, run:
 
 ```bash
 saha-rdk-x5-bpu-smoke
 ```
 
-It allocates DNN/BPU memory, submits one inference, waits for completion,
-checks that `bpu_hw_io_x5` is loaded, and prints `BPU_SMOKE_PASS` with an output
-hash.  The bundled input is all-black NV12, so this is a BPU driver/runtime
-smoke test rather than an image-classification accuracy test.  A nonzero exit
-and `BPU_SMOKE_FAIL stage=...` identify the failed runtime stage.  The base RDK
-X5 image deliberately does not include this command, the DNN runtime, or the
-BPU driver.
+It validates the policy's `obs_history` float32 `[1,270]` input and
+`actions` float32 `[1,12]` output, allocates DNN/BPU memory, submits one
+inference, waits for completion, checks that all 12 actions are finite, and
+confirms that `bpu_hw_io_x5` is loaded. Success prints `BPU_SMOKE_PASS
+algorithm=himloco-go2` with a deterministic output hash. This is offline
+algorithm validation only: the command does not access motors or issue robot
+control commands. A nonzero exit and `BPU_SMOKE_FAIL stage=...` identify the
+failed runtime stage. The base RDK X5 image deliberately does not include this
+command, the DNN runtime, or the BPU driver.
 
 The script builds the Docker builder image, mounts persistent cache directories, then runs a target-specific kas graph. Jetson targets use:
 
