@@ -109,7 +109,7 @@ validate_wic_mbr() {
 }
 
 validate_capacity() {
-  DEVICE_BYTES="$(blockdev --getsize64 "$DEVICE")" ||
+  DEVICE_BYTES="$(lsblk -bdn -o SIZE "$DEVICE")" ||
     die "cannot determine device size: ${DEVICE}"
   [[ "$DEVICE_BYTES" =~ ^[0-9]+$ ]] ||
     die "invalid device size: ${DEVICE_BYTES:-empty}"
@@ -192,7 +192,7 @@ done
 [ -n "$IMAGE" ] || die "--image is required"
 [ -n "$DEVICE" ] || die "--device is required"
 
-for command_name in bzip2 blockdev dd findmnt grep lsblk od partprobe readlink sed tail tr udevadm wc; do
+for command_name in bzip2 dd findmnt grep lsblk od partprobe readlink sed tail tr udevadm wc; do
   require_command "$command_name"
 done
 if [ "${EUID}" -ne 0 ] && [ "$DRY_RUN" != "1" ]; then
