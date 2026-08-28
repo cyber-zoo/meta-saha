@@ -174,12 +174,31 @@ If the WiFi interface name is not `wlan0`, use the name shown by `nmcli dev stat
 
 ## RDK X5 TF-card image
 
-Decompress and write the RDK X5 WIC image to the intended TF card. Confirm the device path before writing, because this overwrites the selected card:
+Use the guarded flash helper to write a chosen RDK X5 WIC image to a TF card.
+First use `lsblk` to identify the whole removable card, unmount its partitions,
+then pass both the image and disk explicitly. Do not pass a partition such as
+`/dev/sdX1`.
 
 ```bash
-bunzip2 -c saha-image-robot-rdk-x5.rootfs-<timestamp>.wic.bz2 | \
-  sudo dd of=/dev/sdX bs=4M conv=fsync status=progress
+lsblk -o NAME,SIZE,MODEL,TRAN,RM,MOUNTPOINTS
+sudo umount /dev/sdX1 /dev/sdX2
+
+./scripts/saha-flash-rdk-x5 \
+  --image build/rdk-x5/tmp/deploy/images/rdk-x5/saha-image-robot-rdk-x5.rootfs-<timestamp>.wic.bz2 \
+  --device /dev/sdX
 ```
+
+The helper validates the bzip2 archive and image size, accepts only an
+unmounted removable whole disk, requires the resolved device path to be typed
+again on a TTY, writes with `conv=fsync`, and confirms the `CONFIG` and `rootfs`
+labels afterwards. Use `--dry-run` to perform the non-writing preflight:
+
+```bash
+./scripts/saha-flash-rdk-x5 --dry-run --image <image.wic.bz2> --device /dev/sdX
+```
+
+It does not choose an image or device automatically, unmount anything itself,
+write NAND/eMMC firmware, change a bootloader, or access the serial port.
 
 The resulting card has the RDKOS-compatible MBR layout: a fixed 256 MiB `CONFIG` FAT volume beginning at 4 MiB, followed by the ext4 robot rootfs. Its boot script loads the kernel and device tree from the card; the build and image never write the board's persistent boot storage. On first boot, the included `systemd-networkd` profile requests DHCP on the board's `eth0` interface.
 

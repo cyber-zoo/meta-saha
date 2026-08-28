@@ -1,0 +1,238 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  cat <<'USAGE'
+Usage: scripts/saha-flash-rdk-x5 --image <image.wic.bz2> --device <whole-disk> [--dry-run]
+
+Write a built RDK X5 TF-card WIC image to an explicitly selected removable
+whole-disk block device. The image does not update RDK X5 NAND/eMMC firmware or
+open a serial device.
+
+Required arguments:
+  --image PATH    Explicit readable .wic.bz2 artifact to write.
+  --device PATH   Explicit whole removable disk, for example /dev/sdX.
+
+Options:
+  --dry-run       Run every non-writing preflight check and stop.
+  -h, --help      Show this help text.
+
+The script rejects partitions, non-removable disks, loop devices, and every
+device that backs a mounted filesystem. Unmount TF-card partitions yourself
+before running it. A real write requires a TTY and typing the resolved device
+path exactly; there is intentionally no --yes bypass.
+USAGE
+}
+
+die() {
+  printf 'ERROR: %s\n' "$*" >&2
+  exit 2
+}
+
+require_command() {
+  local command_name=$1
+  command -v "$command_name" >/dev/null 2>&1 ||
+    die "required host command is unavailable: ${command_name}"
+}
+
+device_identity() {
+  lsblk -dn -o PATH,TYPE,RM,MAJ:MIN,SIZE,MODEL,SERIAL,TRAN "$DEVICE" |
+    sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//'
+}
+
+validate_device() {
+  local device_type removable
+
+  [ -b "$DEVICE" ] || die "device is not a block device: ${DEVICE}"
+
+  device_type="$(lsblk -dn -o TYPE "$DEVICE")"
+  [ "$device_type" = "disk" ] ||
+    die "device must be a whole disk, not ${device_type:-an unknown type}: ${DEVICE}"
+
+  removable="$(lsblk -dn -o RM "$DEVICE")"
+  [ "$removable" = "1" ] ||
+    die "device is not reported as removable (RM=1): ${DEVICE}"
+
+  DEVICE_KNAME="$(lsblk -dn -o KNAME "$DEVICE")"
+  [ -n "$DEVICE_KNAME" ] || die "cannot determine device kernel name: ${DEVICE}"
+}
+
+validate_unmounted() {
+  local mounted_source mounted_target source_path
+
+  while IFS=' ' read -r mounted_source mounted_target; do
+    [ -n "$mounted_source" ] || continue
+    source_path="${mounted_source%%\[*}"
+    [ -b "$source_path" ] || continue
+
+    if lsblk -s -n -o KNAME "$source_path" 2>/dev/null |
+      grep -Fxq "$DEVICE_KNAME"; then
+      die "device backs mounted filesystem ${mounted_target:-unknown} (${mounted_source}); unmount it before writing"
+    fi
+  done < <(findmnt -rn -o SOURCE,TARGET)
+}
+
+validate_image() {
+  local decoded_size
+
+  case "$IMAGE" in
+    *.wic.bz2) ;;
+    *) die "image must end in .wic.bz2: ${IMAGE}" ;;
+  esac
+
+  [ -f "$IMAGE" ] && [ -r "$IMAGE" ] ||
+    die "image is not a readable regular file: ${IMAGE}"
+
+  bzip2 -t -- "$IMAGE" || die "image is not a valid bzip2 archive: ${IMAGE}"
+  if ! decoded_size="$(bzip2 -dc -- "$IMAGE" | wc -c)"; then
+    die "cannot determine decompressed image size: ${IMAGE}"
+  fi
+  IMAGE_BYTES="${decoded_size//[[:space:]]/}"
+  [[ "$IMAGE_BYTES" =~ ^[0-9]+$ ]] ||
+    die "invalid decompressed image size: ${IMAGE_BYTES:-empty}"
+  [ "$IMAGE_BYTES" -gt 0 ] || die "image is empty: ${IMAGE}"
+}
+
+validate_wic_mbr() {
+  local mbr_signature
+
+  # A bzip2 payload alone is not enough to trust a write target.  Read only
+  # the first sector after the archive integrity check and require the MBR
+  # signature expected by the RDK X5 WIC layout.  The full stream is not stored
+  # on the host during preflight.
+  mbr_signature="$(
+    dd if=<(bzip2 -dc -- "$IMAGE") iflag=fullblock bs=512 count=1 status=none |
+      tail -c 2 | od -An -tx1 | tr -d '[:space:]'
+  )"
+  [ "$mbr_signature" = "55aa" ] ||
+    die "image does not contain the expected RDK X5 WIC MBR signature: ${IMAGE}"
+}
+
+validate_capacity() {
+  DEVICE_BYTES="$(blockdev --getsize64 "$DEVICE")" ||
+    die "cannot determine device size: ${DEVICE}"
+  [[ "$DEVICE_BYTES" =~ ^[0-9]+$ ]] ||
+    die "invalid device size: ${DEVICE_BYTES:-empty}"
+  [ "$IMAGE_BYTES" -le "$DEVICE_BYTES" ] ||
+    die "image is larger than device (${IMAGE_BYTES} > ${DEVICE_BYTES} bytes)"
+}
+
+require_tty_confirmation() {
+  local confirmation
+
+  [ -t 0 ] && [ -r /dev/tty ] ||
+    die "a TTY is required for a real write; use --dry-run for preflight"
+
+  printf '\nWARNING: this erases every partition on %s.\n' "$DEVICE" >/dev/tty
+  printf 'Type the complete resolved device path (%s) to continue: ' "$DEVICE" >/dev/tty
+  IFS= read -r confirmation </dev/tty
+  [ "$confirmation" = "$DEVICE" ] || die "device confirmation did not match; nothing was written"
+}
+
+privileged() {
+  if [ "${EUID}" -eq 0 ]; then
+    "$@"
+  else
+    sudo "$@"
+  fi
+}
+
+write_image() {
+  printf 'Writing %s to %s ...\n' "$IMAGE" "$DEVICE"
+  bzip2 -dc -- "$IMAGE" |
+    privileged dd of="$DEVICE" bs=4M conv=fsync status=progress
+}
+
+verify_written_card() {
+  local labels
+
+  privileged partprobe "$DEVICE"
+  udevadm settle
+  labels="$(lsblk -nr -o LABEL "$DEVICE" | sed '/^[[:space:]]*$/d')"
+  printf 'Detected filesystem labels:\n%s\n' "$labels"
+  printf '%s\n' "$labels" | grep -Fxq 'CONFIG' ||
+    die "write completed but CONFIG label was not detected; inspect ${DEVICE} before use"
+  printf '%s\n' "$labels" | grep -Fxq 'rootfs' ||
+    die "write completed but rootfs label was not detected; inspect ${DEVICE} before use"
+}
+
+IMAGE=""
+DEVICE=""
+DEVICE_KNAME=""
+IMAGE_BYTES=""
+DEVICE_BYTES=""
+DRY_RUN=0
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --image)
+      [ "$#" -ge 2 ] || die "--image requires a path"
+      IMAGE=$2
+      shift 2
+      ;;
+    --device)
+      [ "$#" -ge 2 ] || die "--device requires a path"
+      DEVICE=$2
+      shift 2
+      ;;
+    --dry-run)
+      DRY_RUN=1
+      shift
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      die "unknown argument: $1"
+      ;;
+  esac
+done
+
+[ -n "$IMAGE" ] || die "--image is required"
+[ -n "$DEVICE" ] || die "--device is required"
+
+for command_name in bzip2 blockdev dd findmnt grep lsblk od partprobe readlink sed tail tr udevadm wc; do
+  require_command "$command_name"
+done
+if [ "${EUID}" -ne 0 ] && [ "$DRY_RUN" != "1" ]; then
+  require_command sudo
+fi
+
+IMAGE="$(readlink -f -- "$IMAGE")" || die "cannot resolve image path"
+DEVICE="$(readlink -f -- "$DEVICE")" || die "cannot resolve device path"
+
+validate_image
+validate_wic_mbr
+validate_device
+validate_unmounted
+validate_capacity
+
+IDENTITY_BEFORE="$(device_identity)"
+[ -n "$IDENTITY_BEFORE" ] || die "cannot read device identity: ${DEVICE}"
+
+printf 'RDK X5 TF-card flash preflight passed:\n'
+printf '  image:  %s (%s bytes decompressed)\n' "$IMAGE" "$IMAGE_BYTES"
+printf '  device: %s (%s bytes)\n' "$DEVICE" "$DEVICE_BYTES"
+printf '  identity: %s\n' "$IDENTITY_BEFORE"
+
+if [ "$DRY_RUN" = "1" ]; then
+  printf 'Dry run only: no privilege escalation or write was performed.\n'
+  exit 0
+fi
+
+require_tty_confirmation
+validate_device
+validate_unmounted
+IDENTITY_AFTER="$(device_identity)"
+[ "$IDENTITY_BEFORE" = "$IDENTITY_AFTER" ] ||
+  die "device identity changed after confirmation; nothing was written"
+
+if [ "${EUID}" -ne 0 ]; then
+  sudo -v || die "cannot obtain privilege to write ${DEVICE}"
+fi
+
+trap 'printf "WARNING: write interrupted; the TF card may be incomplete. Reflash it from a verified artifact.\\n" >&2; exit 130' INT TERM
+write_image
+verify_written_card
+printf 'RDK X5 TF-card write completed successfully. NAND/eMMC firmware was not modified.\n'

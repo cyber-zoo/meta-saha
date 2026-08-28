@@ -585,4 +585,6 @@ rdk_validate_dry_run_output="$(
 )"
 contains "$rdk_validate_dry_run_output" "kas dump --skip repo_setup_loop --skip finish_setup_repos --skip repos_checkout --skip repos_apply_patches kas/targets/rdk-x5.yml"
 
+bash "$ROOT_DIR/tests/test-flash-rdk-x5.sh"
+
 echo "PASS: build framework contract"
