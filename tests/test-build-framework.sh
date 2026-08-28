@@ -381,10 +381,14 @@ grep -qxF 'DEPENDS = "hobot-dnn"' "$RDK_BPU_SMOKE" ||
   fail "RDK X5 BPU smoke test must build against the DNN ABI"
 grep -qxF 'RDEPENDS:${PN} = "hobot-dnn hobot-bpu-driver"' "$RDK_BPU_SMOKE" ||
   fail "RDK X5 BPU smoke test must require the DNN runtime and BPU driver"
-grep -qxF '    https://archive.d-robotics.cc/downloads/rdk_model_zoo/rdk_x5/mobilenetv1_224x224_nv12.bin;name=model;downloadfilename=mobilenetv1_224x224_nv12.bin \' "$RDK_BPU_SMOKE" ||
-  fail "RDK X5 BPU smoke test must fetch the official X5 MobileNet model"
-grep -qxF 'SRC_URI[model.sha256sum] = "75e5352af729a30baa87b663588aed1c4bf7813dcffcc7b65f1bad6cb5239dca"' "$RDK_BPU_SMOKE" ||
-  fail "RDK X5 BPU smoke test must pin the official model checksum"
+grep -qxF '    https://archive.d-robotics.cc/downloads/rdk_model_zoo/rdk_x5/himloco/himloco_go2_bayese_1x270.bin;name=model;downloadfilename=himloco_go2_bayese_1x270.bin \' "$RDK_BPU_SMOKE" ||
+  fail "RDK X5 BPU smoke test must fetch the official HIMLoco policy"
+grep -qxF 'SRC_URI[model.sha256sum] = "7ce46ca2628f8bc236da0e8564180a1de92847bddf1ec00717ce7aa93e8c3e6a"' "$RDK_BPU_SMOKE" ||
+  fail "RDK X5 BPU smoke test must pin the official HIMLoco checksum"
+grep -qxF '    https://raw.githubusercontent.com/D-Robotics/rdk_model_zoo/7c1eb5393412df1f6d18a97f97c8c086e9ae4b94/samples/robotics/himloco/test_data/obs_history/000000.bin;name=input;downloadfilename=himloco_obs_history_000000.bin \' "$RDK_BPU_SMOKE" ||
+  fail "RDK X5 BPU smoke test must fetch a pinned official HIMLoco observation"
+grep -qxF 'SRC_URI[input.sha256sum] = "36ddc7317348df8e4ce21c3b0a6500bf411bbc47586703a0607d3120badda847"' "$RDK_BPU_SMOKE" ||
+  fail "RDK X5 BPU smoke test must pin the official observation checksum"
 grep -q 'hbDNNInfer' "$RDK_BPU_SMOKE_SOURCE" ||
   fail "RDK X5 BPU smoke test must submit a DNN inference"
 grep -q 'hbDNNWaitTaskDone' "$RDK_BPU_SMOKE_SOURCE" ||
@@ -393,6 +397,10 @@ grep -qxF 'constexpr char kBpuModulePath[] = "/sys/module/bpu_hw_io_x5";' "$RDK_
   fail "RDK X5 BPU smoke test must verify the loaded BPU hardware-I/O module"
 grep -qxF '      "output_fnv1a64=%016llx driver=bpu_hw_io_x5\n",' "$RDK_BPU_SMOKE_SOURCE" ||
   fail "RDK X5 BPU smoke test must terminate a PASS result with a newline"
+grep -q 'algorithm=himloco-go2' "$RDK_BPU_SMOKE_SOURCE" ||
+  fail "RDK X5 BPU smoke test must identify the HIMLoco algorithm"
+grep -q 'std::isfinite' "$RDK_BPU_SMOKE_SOURCE" ||
+  fail "RDK X5 BPU smoke test must reject non-finite HIMLoco tensors"
 grep -qxF '    systemd-networkd \' "$RDK_BASE_GROUP" ||
   fail "RDK X5 base image must install systemd-networkd"
 grep -qxF '    saha-rdk-x5-network \' "$RDK_BASE_GROUP" ||
