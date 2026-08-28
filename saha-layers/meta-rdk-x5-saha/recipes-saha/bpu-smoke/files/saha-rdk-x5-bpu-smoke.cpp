@@ -32,8 +32,8 @@ uint64_t Fnv1a(uint64_t hash, const uint8_t *data, uint32_t length) {
 }
 
 void PrintUsage(const char *program) {
-  std::printf("Usage: %s [model.bin]\\n", program);
-  std::printf("Runs one BPU inference; defaults to the bundled official MobileNetV1 model.\\n");
+  std::printf("Usage: %s [model.bin]\n", program);
+  std::printf("Runs one BPU inference; defaults to the bundled official MobileNetV1 model.\n");
 }
 
 }  // namespace
@@ -214,14 +214,14 @@ int main(int argc, char **argv) {
   }
 
   if (failure_stage != nullptr) {
-    std::fprintf(stderr, "BPU_SMOKE_FAIL stage=%s code=%d\\n", failure_stage,
+    std::fprintf(stderr, "BPU_SMOKE_FAIL stage=%s code=%d\n", failure_stage,
                  failure_code);
     return EXIT_FAILURE;
   }
 
   std::printf(
       "BPU_SMOKE_PASS model=%s runtime=%s inputs=%d outputs=%d output_bytes=%llu "
-      "output_fnv1a64=%016llx driver=bpu_hw_io_x5\\n",
+      "output_fnv1a64=%016llx driver=bpu_hw_io_x5\n",
       model_path, hbDNNGetVersion(), input_count, output_count,
       static_cast<unsigned long long>(output_bytes),
       static_cast<unsigned long long>(output_hash));

@@ -385,6 +385,14 @@ grep -qxF '    https://archive.d-robotics.cc/downloads/rdk_model_zoo/rdk_x5/mobi
   fail "RDK X5 BPU smoke test must fetch the official X5 MobileNet model"
 grep -qxF 'SRC_URI[model.sha256sum] = "75e5352af729a30baa87b663588aed1c4bf7813dcffcc7b65f1bad6cb5239dca"' "$RDK_BPU_SMOKE" ||
   fail "RDK X5 BPU smoke test must pin the official model checksum"
+grep -q 'hbDNNInfer' "$RDK_BPU_SMOKE_SOURCE" ||
+  fail "RDK X5 BPU smoke test must submit a DNN inference"
+grep -q 'hbDNNWaitTaskDone' "$RDK_BPU_SMOKE_SOURCE" ||
+  fail "RDK X5 BPU smoke test must wait for DNN inference completion"
+grep -qxF 'constexpr char kBpuModulePath[] = "/sys/module/bpu_hw_io_x5";' "$RDK_BPU_SMOKE_SOURCE" ||
+  fail "RDK X5 BPU smoke test must verify the loaded BPU hardware-I/O module"
+grep -qxF '      "output_fnv1a64=%016llx driver=bpu_hw_io_x5\n",' "$RDK_BPU_SMOKE_SOURCE" ||
+  fail "RDK X5 BPU smoke test must terminate a PASS result with a newline"
 grep -qxF '    systemd-networkd \' "$RDK_BASE_GROUP" ||
   fail "RDK X5 base image must install systemd-networkd"
 grep -qxF '    saha-rdk-x5-network \' "$RDK_BASE_GROUP" ||
