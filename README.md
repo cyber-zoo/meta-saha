@@ -214,14 +214,17 @@ sudo umount /dev/sdX1 /dev/sdX2
 The helper validates the bzip2 archive and image size, accepts only an
 unmounted removable whole disk, requires the resolved device path to be typed
 again on a TTY, writes with `conv=fsync`, and confirms the `CONFIG` and `rootfs`
-labels afterwards. Use `--dry-run` to perform the non-writing preflight:
+labels afterwards. If the desktop auto-mounts either newly written partition,
+the helper unmounts that target partition and flushes the whole device before
+reporting success. Use `--dry-run` to perform the non-writing preflight:
 
 ```bash
 ./scripts/saha-flash-rdk-x5 --dry-run --image <image.wic.bz2> --device /dev/sdX
 ```
 
-It does not choose an image or device automatically, unmount anything itself,
-write NAND/eMMC firmware, change a bootloader, or access the serial port.
+It does not choose an image or device automatically, unmount anything before
+the destructive confirmation, write NAND/eMMC firmware, change a bootloader,
+or access the serial port.
 
 The resulting card has the RDKOS-compatible MBR layout: a fixed 256 MiB
 `CONFIG` FAT volume beginning at 4 MiB, followed by the ext4 robot rootfs.

@@ -19,8 +19,10 @@ Options:
 
 The script rejects partitions, non-removable disks, loop devices, and every
 device that backs a mounted filesystem. Unmount TF-card partitions yourself
-before running it. A real write requires a TTY and typing the resolved device
-path exactly; there is intentionally no --yes bypass.
+before running it. After a verified write, it unmounts only target partitions
+that a desktop session auto-mounted and flushes the whole device. A real write
+requires a TTY and typing the resolved device path exactly; there is
+intentionally no --yes bypass.
 USAGE
 }
 
@@ -57,7 +59,7 @@ validate_device() {
   [ -n "$DEVICE_KNAME" ] || die "cannot determine device kernel name: ${DEVICE}"
 }
 
-validate_unmounted() {
+list_device_mounts() {
   local mounted_source mounted_target source_path
 
   while IFS=' ' read -r mounted_source mounted_target; do
@@ -67,9 +69,21 @@ validate_unmounted() {
 
     if lsblk -s -n -o KNAME "$source_path" 2>/dev/null |
       grep -Fxq "$DEVICE_KNAME"; then
-      die "device backs mounted filesystem ${mounted_target:-unknown} (${mounted_source}); unmount it before writing"
+      printf '%s\t%s\n' "$source_path" "${mounted_target:-unknown}"
     fi
   done < <(findmnt -rn -o SOURCE,TARGET)
+}
+
+validate_unmounted() {
+  local action=${1:-unmount it before writing}
+  local mount_record mounted_source mounted_target
+
+  mount_record="$(list_device_mounts)"
+  mount_record="${mount_record%%$'\n'*}"
+  [ -z "$mount_record" ] || {
+    IFS=$'\t' read -r mounted_source mounted_target <<<"$mount_record"
+    die "device backs mounted filesystem ${mounted_target} (${mounted_source}); ${action}"
+  }
 }
 
 validate_image() {
@@ -156,6 +170,24 @@ verify_written_card() {
     die "write completed but rootfs label was not detected; inspect ${DEVICE} before use"
 }
 
+finalize_written_card() {
+  local mounted_source mounted_target
+
+  while IFS=$'\t' read -r mounted_source mounted_target; do
+    [ -n "$mounted_source" ] || continue
+    printf 'Unmounting post-write desktop automount %s (%s) ...\n' \
+      "$mounted_target" "$mounted_source"
+    privileged umount -- "$mounted_source" ||
+      die "write completed but ${mounted_source} could not be unmounted; do not disconnect or reset the board"
+  done < <(list_device_mounts)
+
+  udevadm settle
+  validate_unmounted \
+    "write completed, but it must be unmounted before disconnecting or resetting the board"
+  privileged blockdev --flushbufs "$DEVICE" ||
+    die "write completed but device buffers could not be flushed: ${DEVICE}"
+}
+
 IMAGE=""
 DEVICE=""
 DEVICE_KNAME=""
@@ -192,7 +224,7 @@ done
 [ -n "$IMAGE" ] || die "--image is required"
 [ -n "$DEVICE" ] || die "--device is required"
 
-for command_name in bzip2 dd findmnt grep lsblk od partprobe readlink sed tail tr udevadm wc; do
+for command_name in blockdev bzip2 dd findmnt grep lsblk od partprobe readlink sed tail tr udevadm umount wc; do
   require_command "$command_name"
 done
 if [ "${EUID}" -ne 0 ] && [ "$DRY_RUN" != "1" ]; then
@@ -235,4 +267,5 @@ fi
 trap 'printf "WARNING: write interrupted; the TF card may be incomplete. Reflash it from a verified artifact.\\n" >&2; exit 130' INT TERM
 write_image
 verify_written_card
-printf 'RDK X5 TF-card write completed successfully. NAND/eMMC firmware was not modified.\n'
+finalize_written_card
+printf 'RDK X5 TF-card write completed, unmounted, and flushed successfully. NAND/eMMC firmware was not modified.\n'

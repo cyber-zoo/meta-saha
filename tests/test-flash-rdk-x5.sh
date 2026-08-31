@@ -78,15 +78,24 @@ for required_fragment in \
   'conv=fsync' \
   'partprobe' \
   "grep -Fxq 'CONFIG'" \
-  "grep -Fxq 'rootfs'"; do
+  "grep -Fxq 'rootfs'" \
+  'Unmounting post-write desktop automount' \
+  'blockdev --flushbufs' \
+  'write completed, unmounted, and flushed successfully'; do
   grep -Fq -- "$required_fragment" "$FLASH_SCRIPT" ||
     fail "flash script is missing safety contract: $required_fragment"
 done
 
+confirmation_line="$(grep -n '^require_tty_confirmation$' "$FLASH_SCRIPT" | tail -n 1 | cut -d: -f1)"
+post_write_unmount_line="$(grep -n '^finalize_written_card$' "$FLASH_SCRIPT" | tail -n 1 | cut -d: -f1)"
+[[ "$confirmation_line" =~ ^[0-9]+$ && "$post_write_unmount_line" =~ ^[0-9]+$ ]] ||
+  fail "flash script must call confirmation and post-write finalization"
+[ "$post_write_unmount_line" -gt "$confirmation_line" ] ||
+  fail "flash script must never unmount a filesystem before confirmation"
+
 if grep -Eq -- '^[[:space:]]*--yes\)' "$FLASH_SCRIPT" ||
-  grep -Eq -- '^[[:space:]]*(sudo[[:space:]]+)?umount[[:space:]]' "$FLASH_SCRIPT" ||
   grep -Eq -- '/dev/tty(USB|ACM)' "$FLASH_SCRIPT"; then
-  fail "flash script must not bypass confirmation, unmount, or access a serial device"
+  fail "flash script must not bypass confirmation or access a serial device"
 fi
 
 printf 'PASS: RDK X5 flash script safety checks\n'
