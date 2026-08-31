@@ -223,7 +223,13 @@ labels afterwards. Use `--dry-run` to perform the non-writing preflight:
 It does not choose an image or device automatically, unmount anything itself,
 write NAND/eMMC firmware, change a bootloader, or access the serial port.
 
-The resulting card has the RDKOS-compatible MBR layout: a fixed 256 MiB `CONFIG` FAT volume beginning at 4 MiB, followed by the ext4 robot rootfs. Its boot script loads the kernel and device tree from the card; the build and image never write the board's persistent boot storage. On first boot, the included `systemd-networkd` profile requests DHCP on the board's `eth0` interface.
+The resulting card has the RDKOS-compatible MBR layout: a fixed 256 MiB
+`CONFIG` FAT volume beginning at 4 MiB, followed by the ext4 robot rootfs.
+`CONFIG` is checked by `fsck.vfat` before systemd mounts it, so an interrupted
+UMS session or power loss can repair the FAT dirty state before use. Its boot
+script loads the kernel and device tree from the card; the build and image
+never write the board's persistent boot storage. On first boot, the included
+`systemd-networkd` profile requests DHCP on the board's `eth0` interface.
 
 For an accelerator image, select the timestamped `.wic.bz2` file from
 `build/rdk-x5-accelerators/tmp/deploy/images/rdk-x5/` instead.  The disk layout

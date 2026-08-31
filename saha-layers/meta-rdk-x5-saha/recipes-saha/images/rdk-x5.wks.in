@@ -4,5 +4,5 @@ bootloader --ptable msdos
 
 # The official layout reserves sectors 8192..532479 (4 MiB..260 MiB) for the
 # fixed CONFIG FAT volume.  hobot-config.vfat is a no-op configuration image.
-part /config --source rawcopy --sourceparams="file=hobot-config.vfat" --fstype=vfat --label CONFIG --align 4096 --fixed-size 256M --use-label
+part /config --source rawcopy --sourceparams="file=hobot-config.vfat" --fstype=vfat --label CONFIG --align 4096 --fixed-size 256M --use-label --fspassno=2
 part / --source rootfs --fstype=ext4 --label rootfs --align 4 --use-uuid

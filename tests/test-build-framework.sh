@@ -429,8 +429,8 @@ grep -qxF 'PTEST_ENABLED:pn-lttng-tools = "0"' "$RDK_LTTNG_APPEND" ||
   fail "RDK X5 must exclude only the incompatible LTTng ptest package"
 grep -qxF 'bootloader --ptable msdos' "$RDK_WKS" ||
   fail "RDK X5 WIC layout must use the official MBR partition table"
-grep -qxF 'part /config --source rawcopy --sourceparams="file=hobot-config.vfat" --fstype=vfat --label CONFIG --align 4096 --fixed-size 256M --use-label' "$RDK_WKS" ||
-  fail "RDK X5 WIC layout must mount CONFIG without a device-name dependency"
+grep -qxF 'part /config --source rawcopy --sourceparams="file=hobot-config.vfat" --fstype=vfat --label CONFIG --align 4096 --fixed-size 256M --use-label --fspassno=2' "$RDK_WKS" ||
+  fail "RDK X5 WIC layout must identify CONFIG by label and check it before mounting"
 grep -qxF 'part / --source rootfs --fstype=ext4 --label rootfs --align 4 --use-uuid' "$RDK_WKS" ||
   fail "RDK X5 WIC layout must place rootfs after CONFIG"
 if rg -n -i '(^|[;[:space:]])(sf|nand|mtd|mmc)[[:space:]]+(erase|write)' "$RDK_WKS" "$RDK_IMAGE"; then
