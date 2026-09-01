@@ -184,7 +184,11 @@ Change the empty root password before using the image outside bring-up.
 
 ### WiFi on the device
 
-Saha images include NetworkManager with `nmcli` for WiFi setup. USB gadget networking (`l4tbr0`, `192.168.55.1`) stays on systemd-networkd; NetworkManager manages WiFi only.
+Saha images include NetworkManager with `nmcli` for WiFi setup. NetworkManager
+manages WiFi only. On Jetson, USB gadget networking (`l4tbr0`,
+`192.168.55.1`) stays on systemd-networkd. On RDK X5, onboard Ethernet, USB
+host adapters, and USB gadget interfaces also stay on systemd-networkd, so
+enabling WiFi does not disturb the existing bring-up paths.
 
 ```bash
 nmcli dev wifi list
@@ -440,7 +444,7 @@ ros2 --help
 
 The supported image target is `saha-image-robot`. On Jetson it is layered on the reusable `saha-image-base` recipe and includes the Jetson BSP base, CUDA runtime libraries, OpenSSH bring-up access, USB device-mode networking support, NetworkManager with `nmcli` for WiFi, the configured ROS 2 runtime and CLI tools, and by default Docker with the official Home Assistant container launcher.
 
-For RDK X5, the same image name is supplied by the isolated `meta-rdk-x5-saha` layer. It includes the RDK X5 kernel/DTBs, RDKOS-compatible `boot.scr`, fixed `CONFIG` partition, OpenSSH bring-up access, a deterministic `systemd-networkd` DHCP profile for `eth0`, core robot tools, and the verified Jazzy ROS 2 runtime. It intentionally does not ship or flash a replacement bootloader.  `SAHA_X5_ACCELERATORS=1` adds only the pinned accelerator packagegroups through a separate kas include; it is rejected for Jetson targets and does not alter the default RDK X5 image.
+For RDK X5, the same image name is supplied by the isolated `meta-rdk-x5-saha` layer. It includes the RDK X5 kernel/DTBs, RDKOS-compatible `boot.scr`, fixed `CONFIG` partition, OpenSSH bring-up access, NetworkManager with `nmcli` for WiFi, deterministic systemd-networkd policies for the non-WiFi interfaces, core robot tools, and the verified Jazzy ROS 2 runtime. It intentionally does not ship or flash a replacement bootloader.  `SAHA_X5_ACCELERATORS=1` adds only the pinned accelerator packagegroups through a separate kas include; it is rejected for Jetson targets and does not alter the default RDK X5 image.
 
 The image does not include CUDA samples or Jetson GPU container runtime tooling. Add `nvidia-container-toolkit` later through an optional image or kas include if GPU-backed containers are required; OE4T R39.2 removed the old `nvidia-docker` recipe.
 

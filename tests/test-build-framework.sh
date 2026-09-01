@@ -362,15 +362,21 @@ RDK_LAYER="$ROOT_DIR/saha-layers/meta-rdk-x5-saha"
 RDK_IMAGE="$RDK_LAYER/recipes-saha/images/saha-image-robot.bb"
 RDK_WKS="$RDK_LAYER/recipes-saha/images/rdk-x5.wks.in"
 RDK_BASE_GROUP="$RDK_LAYER/recipes-saha/packagegroups/packagegroup-saha-rdk-x5-base.bb"
+RDK_NETWORK_GROUP="$RDK_LAYER/recipes-saha/packagegroups/packagegroup-saha-rdk-x5-network.bb"
 RDK_BPU_SMOKE="$RDK_LAYER/recipes-saha/bpu-smoke/saha-rdk-x5-bpu-smoke_1.0.bb"
 RDK_BPU_SMOKE_SOURCE="$RDK_LAYER/recipes-saha/bpu-smoke/files/saha-rdk-x5-bpu-smoke.cpp"
 RDK_NETWORK_RECIPE="$RDK_LAYER/recipes-connectivity/systemd-networkd/saha-rdk-x5-network_1.0.bb"
 RDK_NETWORK_PROFILE="$RDK_LAYER/recipes-connectivity/systemd-networkd/saha-rdk-x5-network/20-saha-eth0.network"
+RDK_NETWORKMANAGER_APPEND="$RDK_LAYER/recipes-connectivity/networkmanager/networkmanager_%.bbappend"
+RDK_NETWORKMANAGER_POLICY="$RDK_LAYER/recipes-connectivity/networkmanager/networkmanager/99-saha-rdk-x5-unmanaged-devices.conf"
+RDK_NETWORKMANAGER_ORDERING="$RDK_LAYER/recipes-connectivity/networkmanager/networkmanager/10-rdk-x5-wifi.conf"
+RDK_HOBOT_WIFI_APPEND="$RDK_LAYER/recipes-d-robotics/wireless/hobot-wifi_%.bbappend"
 [ -f "$RDK_LAYER/conf/layer.conf" ] || fail "RDK X5 Saha layer configuration must exist"
 [ -f "$RDK_LAYER/conf/distro/saha-rdk-x5.conf" ] || fail "RDK X5 distro configuration must exist"
 [ -f "$RDK_IMAGE" ] || fail "RDK X5 robot image recipe must exist"
 [ -f "$RDK_WKS" ] || fail "RDK X5 WIC layout must exist"
 [ -f "$RDK_BASE_GROUP" ] || fail "RDK X5 base packagegroup must exist"
+[ -f "$RDK_NETWORK_GROUP" ] || fail "RDK X5 network packagegroup must exist"
 [ -f "$RDK_BPU_SMOKE" ] || fail "RDK X5 BPU smoke-test recipe must exist"
 [ -f "$RDK_BPU_SMOKE_SOURCE" ] || fail "RDK X5 BPU smoke-test source must exist"
 [ -f "$RDK_NETWORK_RECIPE" ] || fail "RDK X5 network profile recipe must exist"
@@ -401,10 +407,38 @@ grep -q 'algorithm=himloco-go2' "$RDK_BPU_SMOKE_SOURCE" ||
   fail "RDK X5 BPU smoke test must identify the HIMLoco algorithm"
 grep -q 'std::isfinite' "$RDK_BPU_SMOKE_SOURCE" ||
   fail "RDK X5 BPU smoke test must reject non-finite HIMLoco tensors"
-grep -qxF '    systemd-networkd \' "$RDK_BASE_GROUP" ||
-  fail "RDK X5 base image must install systemd-networkd"
-grep -qxF '    saha-rdk-x5-network \' "$RDK_BASE_GROUP" ||
-  fail "RDK X5 base image must install its Ethernet profile"
+grep -qxF '    packagegroup-saha-rdk-x5-network \' "$RDK_BASE_GROUP" ||
+  fail "RDK X5 base image must install its network policy packagegroup"
+for rdk_network_package in \
+  networkmanager-daemon \
+  networkmanager-nmcli \
+  networkmanager-wifi \
+  saha-rdk-x5-network \
+  systemd-networkd \
+  wpa-supplicant; do
+  grep -qxF "    ${rdk_network_package} \\" "$RDK_NETWORK_GROUP" ||
+    fail "RDK X5 network packagegroup is missing: $rdk_network_package"
+done
+[ -f "$RDK_NETWORKMANAGER_APPEND" ] || fail "RDK X5 NetworkManager bbappend must exist"
+[ -f "$RDK_NETWORKMANAGER_POLICY" ] || fail "RDK X5 NetworkManager ownership policy must exist"
+[ -f "$RDK_NETWORKMANAGER_ORDERING" ] || fail "RDK X5 NetworkManager ordering drop-in must exist"
+[ -f "$RDK_HOBOT_WIFI_APPEND" ] || fail "RDK X5 hobot-wifi policy override must exist"
+grep -qxF 'PACKAGECONFIG:append = " nmcli wifi"' "$RDK_NETWORKMANAGER_APPEND" ||
+  fail "RDK X5 NetworkManager must explicitly build nmcli and Wi-Fi support"
+grep -qxF 'REQUIRED_DISTRO_FEATURES:append = " systemd wifi"' "$RDK_NETWORKMANAGER_APPEND" ||
+  fail "RDK X5 NetworkManager must enforce its distro feature contract"
+grep -qxF 'SYSTEMD_AUTO_ENABLE:${PN}-daemon = "enable"' "$RDK_NETWORKMANAGER_APPEND" ||
+  fail "RDK X5 NetworkManager daemon must be enabled"
+grep -qxF 'unmanaged-devices=*,except:type:wifi' "$RDK_NETWORKMANAGER_POLICY" ||
+  fail "RDK X5 NetworkManager must leave non-Wi-Fi interfaces to systemd-networkd"
+grep -qxF 'Wants=hobot-wifi.service' "$RDK_NETWORKMANAGER_ORDERING" ||
+  fail "RDK X5 NetworkManager must start the board Wi-Fi setup service"
+grep -qxF 'After=hobot-wifi.service' "$RDK_NETWORKMANAGER_ORDERING" ||
+  fail "RDK X5 NetworkManager must wait for board Wi-Fi setup"
+grep -qxF 'PACKAGECONFIG:remove = "standalone-wifi"' "$RDK_HOBOT_WIFI_APPEND" ||
+  fail "RDK X5 Saha images must disable the conflicting standalone Wi-Fi policy"
+grep -q 'wifi' "$RDK_LAYER/conf/distro/saha-rdk-x5.conf" ||
+  fail "saha-rdk-x5 distro must enable the Wi-Fi DISTRO_FEATURE"
 grep -qxF 'COMPATIBLE_MACHINE = "^rdk-x5$"' "$RDK_NETWORK_RECIPE" ||
   fail "RDK X5 Ethernet profile must stay machine-scoped"
 grep -qxF 'RDEPENDS:${PN} = "systemd-networkd"' "$RDK_NETWORK_RECIPE" ||
