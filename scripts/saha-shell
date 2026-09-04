@@ -11,8 +11,9 @@ Usage: scripts/saha-shell <target> [-c <command>]
 
 Open a kas shell for a supported target inside Docker.
 With -c, run a non-interactive command inside the kas shell. Jetson targets
-support ROS 2 Jazzy and Lyrical, including the optional Home Assistant image;
-RDK X5 is pinned to Jazzy and requires SAHA_META_D_ROBOTICS_DIR.
+support ROS 2 Jazzy and Lyrical; IQ-9075 and RDK X5 are pinned to Jazzy. The
+optional Home Assistant image is available on Jetson and IQ-9075. RDK X5
+requires SAHA_META_D_ROBOTICS_DIR.
 Run scripts/saha-targets to list targets.
 USAGE
 }

@@ -10,10 +10,11 @@ usage() {
 Usage: scripts/saha-build <target>
 
 Build saha-image-robot for a supported target inside Docker.
-Jetson targets support ROS 2 Jazzy and Lyrical; set SAHA_HOMEASSISTANT=0 to
-omit their Docker and preloaded Home Assistant image. RDK X5 is pinned to Jazzy,
-does not include that Jetson-only packagegroup, and requires
-SAHA_META_D_ROBOTICS_DIR to point to its BSP layer.
+Jetson targets support ROS 2 Jazzy and Lyrical. IQ-9075 and RDK X5 are pinned
+to ROS 2 Jazzy; IQ-9075 uses the standard Qualcomm EVK graph. Set
+SAHA_HOMEASSISTANT=0 to omit the optional Docker and preloaded Home Assistant
+image on Jetson and IQ-9075. RDK X5 requires SAHA_META_D_ROBOTICS_DIR to point
+to its BSP layer.
 Run scripts/saha-targets to list targets.
 USAGE
 }

@@ -11,8 +11,9 @@ Usage: scripts/saha-validate <target>
 
 Expand and validate the kas configuration for a supported target inside Docker
 without fetching repositories or running bitbake. Jetson targets support ROS 2
-Jazzy and Lyrical plus the optional Home Assistant image; RDK X5 is pinned to
-Jazzy and requires SAHA_META_D_ROBOTICS_DIR.
+Jazzy and Lyrical; IQ-9075 and RDK X5 are pinned to Jazzy. The optional Home
+Assistant image is available on Jetson and IQ-9075. RDK X5 requires
+SAHA_META_D_ROBOTICS_DIR.
 Run scripts/saha-targets to list targets.
 USAGE
 }
