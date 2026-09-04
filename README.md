@@ -236,8 +236,9 @@ Change the empty root password before using the image outside bring-up.
 Saha images include NetworkManager with `nmcli` for WiFi setup. NetworkManager
 manages WiFi only. On Jetson, USB gadget networking (`l4tbr0`,
 `192.168.55.1`) stays on systemd-networkd. On RDK X5, onboard Ethernet, USB
-host adapters, and USB gadget interfaces also stay on systemd-networkd, so
-enabling WiFi does not disturb the existing bring-up paths.
+host adapters, and USB gadget interfaces also stay on systemd-networkd. The
+IQ-9075 image keeps the same shared WiFi tooling while Qualcomm's BSP retains
+ownership of the board-specific wired/USB policy.
 
 ```bash
 nmcli dev wifi list
@@ -476,7 +477,7 @@ Supported ROS 2 distros:
 | RDK X5 | `jazzy` | selected by `kas/targets/rdk-x5.yml` |
 | IQ-9075 EVK | `jazzy` | selected by `kas/targets/iq-9075-evk.yml` |
 
-On Jetson only:
+On Jetson and IQ-9075:
 
 | `SAHA_HOMEASSISTANT` | Effect |
 | --- | --- |
