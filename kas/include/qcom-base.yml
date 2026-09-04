@@ -28,6 +28,10 @@ local_conf_header:
       git://.*/ git://git.codelinaro.org/clo/yocto-mirrors/ \
       https://.*/.*/ https://artifacts.codelinaro.org/codelinaro-le/ \
     "
+    # The upstream linux-qcom recipe pins an immutable commit but points at
+    # a very large repository. Keep the fixed SRCREV while using BitBake's
+    # supported shallow-fetch path for this recipe only.
+    BB_GIT_SHALLOW:pn-linux-qcom = "1"
   saha-qcom-boot: |
     # Keep the upstream QCOM recovery/download-mode contract. This only
     # affects the generated image metadata; it does not access hardware.
