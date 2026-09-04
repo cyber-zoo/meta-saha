@@ -361,6 +361,10 @@ grep -qxF 'machine: iq-9075-evk' "$QCOM_TARGET" ||
   fail "IQ-9075 target must select the standard EVK machine"
 grep -q 'qcom_scm.download_mode=1' "$QCOM_BASE" ||
   fail "IQ-9075 image must preserve the QCOM download-mode kernel argument"
+grep -q 'git.codelinaro.org/clo/yocto-mirrors/github' "$QCOM_BASE" ||
+  fail "IQ-9075 graph must retain the upstream Qualcomm Git mirror route"
+grep -q 'artifacts.codelinaro.org/codelinaro-le' "$QCOM_BASE" ||
+  fail "IQ-9075 graph must retain the upstream Qualcomm artifact mirror route"
 if rg -n 'meta-tegra|meta-d-robotics|iq-9075-evk-open-fw' "$QCOM_REPOS" "$QCOM_BASE" "$QCOM_TARGET"; then
   fail "IQ-9075 graph must remain isolated from other BSPs and open-fw variant"
 fi

@@ -19,6 +19,15 @@ local_conf_header:
     SDKMACHINE ?= "x86_64"
     EXTRA_IMAGE_FEATURES ?= "empty-root-password allow-root-login"
     PATCHRESOLVE = "noop"
+  saha-qcom-mirrors: |
+    # Keep the mirror routes used by the upstream meta-qcom Wrynose CI. They
+    # avoid cloning the very large Qualcomm kernel repository directly from
+    # GitHub while preserving the recipe SRCREV and checksum contract.
+    MIRRORS:append = " \
+      git://github.com git://git.codelinaro.org/clo/yocto-mirrors/github/ \
+      git://.*/ git://git.codelinaro.org/clo/yocto-mirrors/ \
+      https://.*/.*/ https://artifacts.codelinaro.org/codelinaro-le/ \
+    "
   saha-qcom-boot: |
     # Keep the upstream QCOM recovery/download-mode contract. This only
     # affects the generated image metadata; it does not access hardware.
