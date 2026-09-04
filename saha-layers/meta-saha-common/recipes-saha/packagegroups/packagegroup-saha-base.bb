@@ -10,6 +10,5 @@ RDEPENDS:${PN} = " \
     sshfs-fuse \
     strace \
     can-utils \
-    tegra-tools-tegrastats \
     dosfstools \
 "

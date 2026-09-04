@@ -136,44 +136,46 @@ grep -q 'Unsupported SAHA_HOMEASSISTANT value' /tmp/saha-invalid-ha.out ||
 if [ ! -f "$ROOT_DIR/kas/include/homeassistant-container.yml" ]; then
   fail "Home Assistant kas include must exist"
 fi
-if [ ! -f "$ROOT_DIR/saha-layers/meta-tegra-saha/recipes-saha/homeassistant-container/saha-homeassistant-container.bb" ]; then
+COMMON_LAYER="$ROOT_DIR/saha-layers/meta-saha-common"
+
+if [ ! -f "$COMMON_LAYER/recipes-saha/homeassistant-container/saha-homeassistant-container.bb" ]; then
   fail "Home Assistant container recipe must exist"
 fi
 grep -q 'Requires=docker.service' \
-  "$ROOT_DIR/saha-layers/meta-tegra-saha/recipes-saha/homeassistant-container/saha-homeassistant-container/homeassistant-container.service" ||
+  "$COMMON_LAYER/recipes-saha/homeassistant-container/saha-homeassistant-container/homeassistant-container.service" ||
   fail "Home Assistant systemd unit must depend on docker.service"
 grep -q 'ghcr.io/home-assistant/home-assistant:stable' \
-  "$ROOT_DIR/saha-layers/meta-tegra-saha/recipes-saha/homeassistant-container/saha-homeassistant-container/saha-homeassistant-container.env" ||
+  "$COMMON_LAYER/recipes-saha/homeassistant-container/saha-homeassistant-container/saha-homeassistant-container.env" ||
   fail "Home Assistant default image must use the official container"
 grep -q 'packagegroup-saha-homeassistant-container' \
   "$ROOT_DIR/kas/include/homeassistant-container.yml" ||
   fail "Home Assistant kas include must install the packagegroup"
 grep -q 'saha-homeassistant-container-image' \
-  "$ROOT_DIR/saha-layers/meta-tegra-saha/recipes-saha/packagegroups/packagegroup-saha-homeassistant-container.bb" ||
+  "$COMMON_LAYER/recipes-saha/packagegroups/packagegroup-saha-homeassistant-container.bb" ||
   fail "Home Assistant packagegroup must include the preloaded image recipe"
 grep -q 'docker load -i' \
-  "$ROOT_DIR/saha-layers/meta-tegra-saha/recipes-saha/homeassistant-container/saha-homeassistant-container/saha-homeassistant-container.sh" ||
+  "$COMMON_LAYER/recipes-saha/homeassistant-container/saha-homeassistant-container/saha-homeassistant-container.sh" ||
   fail "Home Assistant launcher must load the preloaded docker archive"
 grep -q 'SAHA_HOMEASSISTANT_PULL=0' \
-  "$ROOT_DIR/saha-layers/meta-tegra-saha/recipes-saha/homeassistant-container/saha-homeassistant-container/saha-homeassistant-container.env" ||
+  "$COMMON_LAYER/recipes-saha/homeassistant-container/saha-homeassistant-container/saha-homeassistant-container.env" ||
   fail "Home Assistant defaults must prefer the preloaded image over docker pull"
 grep -q 'docker save' \
-  "$ROOT_DIR/saha-layers/meta-tegra-saha/recipes-saha/homeassistant-container/saha-homeassistant-container-image/fetch-image.sh" ||
+  "$COMMON_LAYER/recipes-saha/homeassistant-container/saha-homeassistant-container-image/fetch-image.sh" ||
   fail "Home Assistant fetch script must support local docker save"
 grep -q 'homeassistant-container.tar' \
-  "$ROOT_DIR/saha-layers/meta-tegra-saha/recipes-saha/homeassistant-container/saha-homeassistant-container-image/fetch-image.sh" ||
+  "$COMMON_LAYER/recipes-saha/homeassistant-container/saha-homeassistant-container-image/fetch-image.sh" ||
   fail "Home Assistant fetch script must support local tarball cache"
 grep -q 'image_loaded' \
-  "$ROOT_DIR/saha-layers/meta-tegra-saha/recipes-saha/homeassistant-container/saha-homeassistant-container/saha-homeassistant-container.sh" ||
+  "$COMMON_LAYER/recipes-saha/homeassistant-container/saha-homeassistant-container/saha-homeassistant-container.sh" ||
   fail "Home Assistant launcher must prefer an existing local docker image"
 grep -q 'HA_CONTAINER_LOCAL_TAR' \
   "$ROOT_DIR/kas/include/homeassistant-container.yml" ||
   fail "Home Assistant kas include must define a local tarball cache path"
 grep -q 'wait-docker' \
-  "$ROOT_DIR/saha-layers/meta-tegra-saha/recipes-saha/homeassistant-container/saha-homeassistant-container/saha-homeassistant-container.sh" ||
+  "$COMMON_LAYER/recipes-saha/homeassistant-container/saha-homeassistant-container/saha-homeassistant-container.sh" ||
   fail "Home Assistant launcher must wait for docker"
 grep -q 'multi-user.target.wants/homeassistant-container.service' \
-  "$ROOT_DIR/saha-layers/meta-tegra-saha/recipes-saha/homeassistant-container/saha-homeassistant-container.bb" ||
+  "$COMMON_LAYER/recipes-saha/homeassistant-container/saha-homeassistant-container.bb" ||
   fail "Home Assistant launcher must enable systemd service at install time"
 grep -q 'IMAGE_ROOTFS_EXTRA_SPACE' \
   "$ROOT_DIR/kas/include/homeassistant-container.yml" ||
@@ -310,10 +312,10 @@ grep -q 'ROS_WORLD_SKIP_GROUPS:append = " zenoh"' "$ROOT_DIR/kas/include/ros-dis
 grep -q 'EXTRA_IMAGE_FEATURES ?= "empty-root-password allow-root-login"' "$ROOT_DIR/kas/include/base.yml" ||
   fail "Wrynose image features must not use removed debug-tweaks alias"
 
-OPENSSH_APPEND="$ROOT_DIR/saha-layers/meta-tegra-saha/recipes-connectivity/openssh/openssh_%.bbappend"
+OPENSSH_APPEND="$COMMON_LAYER/recipes-connectivity/openssh/openssh_%.bbappend"
 [ -f "$OPENSSH_APPEND" ] ||
   fail "openssh bbappend must exist for SSH root empty-password access"
-grep -q 'PermitEmptyPasswords yes' "$ROOT_DIR/saha-layers/meta-tegra-saha/recipes-connectivity/openssh/openssh/99-saha-root-empty-password.conf" ||
+grep -q 'PermitEmptyPasswords yes' "$COMMON_LAYER/recipes-connectivity/openssh/openssh/99-saha-root-empty-password.conf" ||
   fail "OpenSSH must explicitly permit empty passwords for root SSH access"
 
 grep -q 'BB_HASHSERVE_DB_DIR ?= "${SSTATE_DIR}"' "$ROOT_DIR/kas/include/base.yml" ||
@@ -407,6 +409,8 @@ grep -q 'algorithm=himloco-go2' "$RDK_BPU_SMOKE_SOURCE" ||
   fail "RDK X5 BPU smoke test must identify the HIMLoco algorithm"
 grep -q 'std::isfinite' "$RDK_BPU_SMOKE_SOURCE" ||
   fail "RDK X5 BPU smoke test must reject non-finite HIMLoco tensors"
+grep -qxF '    packagegroup-saha-base \' "$RDK_BASE_GROUP" ||
+  fail "RDK X5 base image must compose the shared base packagegroup"
 grep -qxF '    packagegroup-saha-rdk-x5-network \' "$RDK_BASE_GROUP" ||
   fail "RDK X5 base image must install its network policy packagegroup"
 for rdk_network_package in \
@@ -476,10 +480,8 @@ fi
 
 RDK_ROS_PACKAGEGROUP="$RDK_LAYER/recipes-saha/packagegroups/packagegroup-saha-rdk-x5-ros2.bb"
 [ -f "$RDK_ROS_PACKAGEGROUP" ] || fail "RDK X5 ROS 2 packagegroup must exist"
-grep -q 'ros-base' "$RDK_ROS_PACKAGEGROUP" ||
-  fail "RDK X5 ROS 2 packagegroup must install ros-base"
-grep -q 'ros2cli-common-extensions' "$RDK_ROS_PACKAGEGROUP" ||
-  fail "RDK X5 ROS 2 packagegroup must install ROS 2 CLI extensions"
+grep -qxF 'RDEPENDS:${PN} = "packagegroup-saha-ros2"' "$RDK_ROS_PACKAGEGROUP" ||
+  fail "RDK X5 ROS 2 packagegroup must reuse the shared ROS 2 packagegroup"
 
 grep -A2 '^target:$' "$ROOT_DIR/kas/include/base.yml" |
   grep -qxF '  - saha-image-robot' ||
@@ -493,7 +495,7 @@ grep -q 'Build saha-image-robot' "$ROOT_DIR/scripts/saha-build" ||
 grep -q 'packagegroup-saha-ros2' "$ROOT_DIR/saha-layers/meta-tegra-saha/recipes-saha/images/saha-image-robot.bb" ||
   fail "saha-image-robot must install the Saha ROS 2 packagegroup"
 
-ROS2_PACKAGEGROUP="$ROOT_DIR/saha-layers/meta-tegra-saha/recipes-saha/packagegroups/packagegroup-saha-ros2.bb"
+ROS2_PACKAGEGROUP="$COMMON_LAYER/recipes-saha/packagegroups/packagegroup-saha-ros2.bb"
 [ -f "$ROS2_PACKAGEGROUP" ] ||
   fail "Saha ROS 2 packagegroup must exist"
 grep -q 'ros-base' "$ROS2_PACKAGEGROUP" ||
@@ -532,8 +534,7 @@ grep -qxF 'LTTNGMODULES = ""' "$LTTNG_TOOLS_APPEND" ||
   fail "lttng-tools ptest dependencies must not pull unsupported lttng kernel module"
 
 for hostname_append in \
-  "$ROOT_DIR/saha-layers/meta-tegra-saha/recipes-core/base-files/base-files_%.bbappend" \
-  "$RDK_LAYER/recipes-core/base-files/base-files_%.bbappend"
+  "$COMMON_LAYER/recipes-core/base-files/base-files_%.bbappend"
 do
   [ -f "$hostname_append" ] || fail "Saha base-files hostname override must exist: $hostname_append"
   grep -qxF 'hostname = "sahaWorld"' "$hostname_append" ||
@@ -555,7 +556,7 @@ grep -q '/sys/class/usb_role/usb2-0-role-switch/role' "$USB_ROLE_HELPER" ||
 grep -q 'echo device >' "$USB_ROLE_HELPER" ||
   fail "Saha USB role helper must force device role before gadget start"
 
-NETWORK_PACKAGEGROUP="$ROOT_DIR/saha-layers/meta-tegra-saha/recipes-saha/packagegroups/packagegroup-saha-network.bb"
+NETWORK_PACKAGEGROUP="$COMMON_LAYER/recipes-saha/packagegroups/packagegroup-saha-network.bb"
 [ -f "$NETWORK_PACKAGEGROUP" ] ||
   fail "network packagegroup must exist"
 grep -q 'networkmanager-nmcli' "$NETWORK_PACKAGEGROUP" ||
@@ -567,7 +568,7 @@ NETWORKMANAGER_APPEND="$ROOT_DIR/saha-layers/meta-tegra-saha/recipes-connectivit
   fail "NetworkManager bbappend must exist"
 grep -q 'except:type:wifi' "$ROOT_DIR/saha-layers/meta-tegra-saha/recipes-connectivity/networkmanager/networkmanager/99-saha-unmanaged-devices.conf" ||
   fail "NetworkManager must leave USB gadget interfaces to systemd-networkd"
-grep -q 'packagegroup-saha-network' "$ROOT_DIR/saha-layers/meta-tegra-saha/recipes-saha/images/saha-image-common.inc" ||
+grep -q 'packagegroup-saha-network' "$COMMON_LAYER/recipes-saha/images/saha-image-common.inc" ||
   fail "default Saha images must include network packagegroup"
 grep -q 'wifi' "$ROOT_DIR/saha-layers/meta-tegra-saha/conf/distro/tegra-saha.conf" ||
   fail "tegra-saha distro must enable wifi DISTRO_FEATURE"

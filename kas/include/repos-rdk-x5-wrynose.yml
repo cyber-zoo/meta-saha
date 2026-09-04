@@ -45,6 +45,7 @@ repos:
   meta-saha:
     path: /work/meta-saha
     layers:
+      saha-layers/meta-saha-common:
       saha-layers/meta-rdk-x5-saha:
 
   meta-d-robotics:

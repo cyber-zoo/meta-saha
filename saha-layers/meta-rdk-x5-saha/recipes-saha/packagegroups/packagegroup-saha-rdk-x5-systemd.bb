@@ -3,7 +3,4 @@ LICENSE = "MIT"
 
 inherit packagegroup
 
-RDEPENDS:${PN} = " \
-    less \
-    systemd-analyze \
-"
+RDEPENDS:${PN} = "packagegroup-saha-systemd"

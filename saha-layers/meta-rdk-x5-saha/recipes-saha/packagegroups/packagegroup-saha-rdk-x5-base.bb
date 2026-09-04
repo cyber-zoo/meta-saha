@@ -4,11 +4,6 @@ LICENSE = "MIT"
 inherit packagegroup
 
 RDEPENDS:${PN} = " \
-    haveged \
-    procps \
-    sshfs-fuse \
-    strace \
-    can-utils \
-    dosfstools \
+    packagegroup-saha-base \
     packagegroup-saha-rdk-x5-network \
 "

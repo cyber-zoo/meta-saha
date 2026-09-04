@@ -44,4 +44,5 @@ repos:
     path: /work/meta-saha
     layers:
       saha-layers/meta-tegra-support:
+      saha-layers/meta-saha-common:
       saha-layers/meta-tegra-saha:

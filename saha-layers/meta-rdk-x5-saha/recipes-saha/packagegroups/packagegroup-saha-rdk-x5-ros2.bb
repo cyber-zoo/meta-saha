@@ -3,7 +3,4 @@ LICENSE = "MIT"
 
 inherit packagegroup
 
-RDEPENDS:${PN} = " \
-    ros-base \
-    ros2cli-common-extensions \
-"
+RDEPENDS:${PN} = "packagegroup-saha-ros2"

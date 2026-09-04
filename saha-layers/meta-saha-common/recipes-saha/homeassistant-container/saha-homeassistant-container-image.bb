@@ -1,4 +1,4 @@
-SUMMARY = "Preloaded Home Assistant container image for Jetson (aarch64)"
+SUMMARY = "Preloaded Home Assistant container image for Saha (aarch64)"
 DESCRIPTION = "Installs the official Home Assistant container image as a \
 docker-archive tarball for offline docker load on first boot. During build, \
 uses a local archive or local Docker image when available, otherwise fetches \
