@@ -367,6 +367,8 @@ grep -q 'artifacts.codelinaro.org/codelinaro-le' "$QCOM_BASE" ||
   fail "IQ-9075 graph must retain the upstream Qualcomm artifact mirror route"
 grep -q 'INHERIT += "rm_work"' "$QCOM_BASE" ||
   fail "IQ-9075 graph must prune completed recipe workdirs"
+grep -q 'BB_GIT_SHALLOW:pn-hexagon-dsp-binaries = "1"' "$QCOM_BASE" ||
+  fail "IQ-9075 graph must shallow-fetch the pinned DSP repository"
 if rg -n 'meta-tegra|meta-d-robotics|iq-9075-evk-open-fw' "$QCOM_REPOS" "$QCOM_BASE" "$QCOM_TARGET"; then
   fail "IQ-9075 graph must remain isolated from other BSPs and open-fw variant"
 fi

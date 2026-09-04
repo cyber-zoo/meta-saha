@@ -35,6 +35,10 @@ local_conf_header:
     # a very large repository. Keep the fixed SRCREV while using BitBake's
     # supported shallow-fetch path for this recipe only.
     BB_GIT_SHALLOW:pn-linux-qcom = "1"
+    # The IQ-9075 DSP firmware tag is immutable but hosted in another
+    # repository with a sizeable history. Shallow-fetch that source as well;
+    # the recipe still verifies the pinned tag contents and license files.
+    BB_GIT_SHALLOW:pn-hexagon-dsp-binaries = "1"
   saha-qcom-boot: |
     # Keep the upstream QCOM recovery/download-mode contract. This only
     # affects the generated image metadata; it does not access hardware.
