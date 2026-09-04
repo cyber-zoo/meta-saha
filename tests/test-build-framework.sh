@@ -470,12 +470,9 @@ grep -qxF '    packagegroup-saha-base \' "$RDK_BASE_GROUP" ||
 grep -qxF '    packagegroup-saha-rdk-x5-network \' "$RDK_BASE_GROUP" ||
   fail "RDK X5 base image must install its network policy packagegroup"
 for rdk_network_package in \
-  networkmanager-daemon \
-  networkmanager-nmcli \
-  networkmanager-wifi \
+  packagegroup-saha-network \
   saha-rdk-x5-network \
-  systemd-networkd \
-  wpa-supplicant; do
+  systemd-networkd; do
   grep -qxF "    ${rdk_network_package} \\" "$RDK_NETWORK_GROUP" ||
     fail "RDK X5 network packagegroup is missing: $rdk_network_package"
 done
