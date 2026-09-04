@@ -23,6 +23,8 @@ contains "$targets_output" "agx-orin-devkit"
 contains "$targets_output" "jetson-agx-orin-devkit"
 contains "$targets_output" "rdk-x5"
 contains "$targets_output" "D-Robotics RDK X5"
+contains "$targets_output" "iq-9075-evk"
+contains "$targets_output" "Qualcomm Dragonwing IQ-9075"
 if [[ "$targets_output" == *"ros"* ]] || [[ "$targets_output" == *"ROS"* ]]; then
   fail "supported target list must not include ROS targets"
 fi
@@ -47,6 +49,26 @@ contains "$dry_run_output" "/work/sstate-cache"
 if [[ "$dry_run_output" == *" -it "* ]]; then
   fail "non-interactive build command should not allocate a TTY"
 fi
+
+qcom_dry_run_output="$(SAHA_DRY_RUN=1 "$ROOT_DIR/scripts/saha-build" iq-9075-evk)"
+contains "$qcom_dry_run_output" "kas build kas/targets/iq-9075-evk.yml:kas/include/homeassistant-container.yml"
+contains "$qcom_dry_run_output" "/work/build/iq-9075-evk"
+contains "$qcom_dry_run_output" "KAS_WORK_DIR=/work/build/iq-9075-evk"
+contains "$qcom_dry_run_output" "/work/downloads"
+contains "$qcom_dry_run_output" "/work/sstate-cache"
+if [[ "$qcom_dry_run_output" == *"tegra"* ]] || [[ "$qcom_dry_run_output" == *"meta-d-robotics"* ]]; then
+  fail "IQ-9075 Docker command must not select another BSP graph"
+fi
+
+if SAHA_DRY_RUN=1 SAHA_ROS_DISTRO=lyrical "$ROOT_DIR/scripts/saha-build" iq-9075-evk >/tmp/saha-iq-9075-lyrical.out 2>&1; then
+  fail "IQ-9075 unexpectedly accepted ROS 2 Lyrical"
+fi
+contains "$(cat /tmp/saha-iq-9075-lyrical.out)" "IQ-9075 EVK supports only ROS 2 Jazzy"
+
+if SAHA_DRY_RUN=1 SAHA_X5_ACCELERATORS=1 "$ROOT_DIR/scripts/saha-build" iq-9075-evk >/tmp/saha-iq-9075-x5.out 2>&1; then
+  fail "IQ-9075 unexpectedly accepted the RDK X5 accelerator switch"
+fi
+contains "$(cat /tmp/saha-iq-9075-x5.out)" "SAHA_X5_ACCELERATORS is supported only for rdk-x5"
 
 rdk_bsp_dir="$(mktemp -d)"
 rdk_dry_run_output="$(
@@ -308,6 +330,40 @@ for ros_distro in jazzy lyrical; do
 done
 grep -q 'ROS_WORLD_SKIP_GROUPS:append = " zenoh"' "$ROOT_DIR/kas/include/ros-distro-lyrical.yml" ||
   fail "Lyrical builds must skip the zenoh group unless meta-zenoh is added"
+
+QCOM_LAYER="$ROOT_DIR/saha-layers/meta-qcom-saha"
+QCOM_REPOS="$ROOT_DIR/kas/include/repos-qcom-wrynose.yml"
+QCOM_BASE="$ROOT_DIR/kas/include/qcom-base.yml"
+QCOM_TARGET="$ROOT_DIR/kas/targets/iq-9075-evk.yml"
+[ -f "$QCOM_LAYER/conf/layer.conf" ] || fail "IQ-9075 Saha layer configuration must exist"
+[ -f "$QCOM_LAYER/conf/distro/saha-qcom.conf" ] || fail "IQ-9075 distro configuration must exist"
+[ -f "$QCOM_LAYER/recipes-saha/images/saha-image-robot.bb" ] || fail "IQ-9075 image recipe must exist"
+[ -f "$QCOM_REPOS" ] || fail "IQ-9075 kas repository graph must exist"
+[ -f "$QCOM_BASE" ] || fail "IQ-9075 kas base configuration must exist"
+[ -f "$QCOM_TARGET" ] || fail "IQ-9075 kas target configuration must exist"
+grep -qxF '    commit: ef022bf82d79015802309d14c28b13373ebe53f5' "$QCOM_REPOS" ||
+  fail "IQ-9075 graph must pin OpenEmbedded-Core"
+grep -qxF '    commit: 0ad6c1c34a5e07a5f8dd66ab248c1e7b37b69fa9' "$QCOM_REPOS" ||
+  fail "IQ-9075 graph must pin BitBake"
+grep -qxF '    commit: 8bfc4ae8cf7fc835a23d7a27830f866617d9808f' "$QCOM_REPOS" ||
+  fail "IQ-9075 graph must pin meta-lts-mixins"
+grep -qxF '    commit: bfe2312f021a6ca390e5205f77195a1d5af30aa5' "$QCOM_REPOS" ||
+  fail "IQ-9075 graph must pin meta-qcom"
+grep -A6 '^  meta-saha:' "$QCOM_REPOS" |
+  grep -qxF '      saha-layers/meta-saha-common:' ||
+  fail "IQ-9075 graph must consume the shared Saha layer"
+grep -A6 '^  meta-saha:' "$QCOM_REPOS" |
+  grep -qxF '      saha-layers/meta-qcom-saha:' ||
+  fail "IQ-9075 graph must consume the QCOM Saha layer"
+grep -qxF 'distro: saha-qcom' "$QCOM_BASE" ||
+  fail "IQ-9075 graph must select the QCOM Saha distro"
+grep -qxF 'machine: iq-9075-evk' "$QCOM_TARGET" ||
+  fail "IQ-9075 target must select the standard EVK machine"
+grep -q 'qcom_scm.download_mode=1' "$QCOM_BASE" ||
+  fail "IQ-9075 image must preserve the QCOM download-mode kernel argument"
+if rg -n 'meta-tegra|meta-d-robotics|iq-9075-evk-open-fw' "$QCOM_REPOS" "$QCOM_BASE" "$QCOM_TARGET"; then
+  fail "IQ-9075 graph must remain isolated from other BSPs and open-fw variant"
+fi
 
 grep -q 'EXTRA_IMAGE_FEATURES ?= "empty-root-password allow-root-login"' "$ROOT_DIR/kas/include/base.yml" ||
   fail "Wrynose image features must not use removed debug-tweaks alias"
@@ -655,6 +711,9 @@ rdk_validate_dry_run_output="$(
   "$ROOT_DIR/scripts/saha-validate" rdk-x5
 )"
 contains "$rdk_validate_dry_run_output" "kas dump --skip repo_setup_loop --skip finish_setup_repos --skip repos_checkout --skip repos_apply_patches kas/targets/rdk-x5.yml"
+
+qcom_validate_dry_run_output="$(SAHA_DRY_RUN=1 "$ROOT_DIR/scripts/saha-validate" iq-9075-evk)"
+contains "$qcom_validate_dry_run_output" "kas dump --skip repo_setup_loop --skip finish_setup_repos --skip repos_checkout --skip repos_apply_patches kas/targets/iq-9075-evk.yml:kas/include/homeassistant-container.yml"
 
 bash "$ROOT_DIR/tests/test-flash-rdk-x5.sh"
 

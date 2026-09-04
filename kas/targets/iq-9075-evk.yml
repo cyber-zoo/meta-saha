@@ -1,0 +1,6 @@
+header:
+  version: 17
+  includes:
+    - kas/include/qcom-base.yml
+
+machine: iq-9075-evk

@@ -12,6 +12,7 @@ orin-nx-16g-p3768|p3768-0000-p3767-0000|Jetson Orin NX 16GB P3767-0000 module in
 agx-thor-devkit|jetson-agx-thor-devkit|AGX Thor devkit P3834-0008 module in P4071-0000 carrier with NVMe
 agx-orin-devkit|jetson-agx-orin-devkit|AGX Orin devkit P3701-0000 module in P3737-0000 carrier
 rdk-x5|rdk-x5|D-Robotics RDK X5 development board
+iq-9075-evk|iq-9075-evk|Qualcomm Dragonwing IQ-9075 Evaluation Kit
 TARGETS
 }
 
@@ -152,6 +153,24 @@ saha_kas_config_for_target() {
       return 0
     fi
     printf 'kas/targets/rdk-x5.yml\n'
+    return 0
+  fi
+
+  if [ "$target" = "iq-9075-evk" ]; then
+    if [ "$x5_accelerators" = "1" ]; then
+      printf 'SAHA_X5_ACCELERATORS is supported only for rdk-x5\n' >&2
+      return 2
+    fi
+    if [ "$ros_distro" != "jazzy" ]; then
+      printf 'IQ-9075 EVK supports only ROS 2 Jazzy (requested: %s)\n' "$ros_distro" >&2
+      return 2
+    fi
+    saha_require_homeassistant_setting || return $?
+    kas_config="kas/targets/iq-9075-evk.yml"
+    if saha_homeassistant_enabled; then
+      kas_config="${kas_config}:kas/include/homeassistant-container.yml"
+    fi
+    printf '%s\n' "$kas_config"
     return 0
   fi
 

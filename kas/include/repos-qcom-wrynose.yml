@@ -1,0 +1,63 @@
+header:
+  version: 17
+
+defaults:
+  repos:
+    branch: wrynose
+
+repos:
+  openembedded-core:
+    path: repos/openembedded-core
+    url: https://github.com/openembedded/openembedded-core.git
+    commit: ef022bf82d79015802309d14c28b13373ebe53f5
+    layers:
+      meta:
+
+  bitbake:
+    path: repos/bitbake
+    url: https://github.com/openembedded/bitbake.git
+    branch: "2.18"
+    commit: 0ad6c1c34a5e07a5f8dd66ab248c1e7b37b69fa9
+    layers:
+      .: disabled
+
+  meta-lts-mixins:
+    path: repos/meta-lts-mixins
+    url: https://git.yoctoproject.org/meta-lts-mixins
+    branch: wrynose/linux-firmware
+    commit: 8bfc4ae8cf7fc835a23d7a27830f866617d9808f
+
+  meta-openembedded:
+    path: repos/meta-openembedded
+    url: https://git.openembedded.org/meta-openembedded
+    commit: 14282a02be9c74a1276a7cda7d6c89e054699a11
+    layers:
+      meta-filesystems:
+      meta-networking:
+      meta-oe:
+      meta-python:
+
+  meta-virtualization:
+    path: repos/meta-virtualization
+    url: https://git.yoctoproject.org/meta-virtualization
+    commit: aab9c1a0dd6b48776c9f372a32c32486c560b9c9
+
+  meta-ros:
+    path: repos/meta-ros
+    url: https://github.com/ros/meta-ros.git
+    commit: dbb05e0b4430cd26dc2a9973cc4d70bb46d6b354
+    layers:
+      meta-ros-common:
+      meta-ros2:
+      meta-ros2-jazzy:
+
+  meta-qcom:
+    path: repos/meta-qcom
+    url: https://github.com/qualcomm-linux/meta-qcom.git
+    commit: bfe2312f021a6ca390e5205f77195a1d5af30aa5
+
+  meta-saha:
+    path: /work/meta-saha
+    layers:
+      saha-layers/meta-saha-common:
+      saha-layers/meta-qcom-saha:
