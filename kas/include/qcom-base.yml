@@ -19,6 +19,9 @@ local_conf_header:
     SDKMACHINE ?= "x86_64"
     EXTRA_IMAGE_FEATURES ?= "empty-root-password allow-root-login"
     PATCHRESOLVE = "noop"
+    # Match the upstream QCOM CI disk contract; completed recipe workdirs are
+    # pruned while the shared downloads and sstate caches remain persistent.
+    INHERIT += "rm_work"
   saha-qcom-mirrors: |
     # Keep the mirror routes used by the upstream meta-qcom Wrynose CI. They
     # avoid cloning the very large Qualcomm kernel repository directly from
