@@ -54,6 +54,17 @@ workflow:
 ./scripts/saha-build iq-9075-evk
 ```
 
+The core BSP/image path has been validated with the optional container overlay
+disabled when the GHCR fetch is unavailable:
+
+```bash
+SAHA_HOMEASSISTANT=0 ./scripts/saha-build iq-9075-evk
+```
+
+This still includes Qualcomm firmware, DSP packages, ROS 2 Jazzy, and the
+qcomflash output; only Docker and the preloaded Home Assistant image are
+omitted.
+
 The IQ-9075 graph is pinned to Qualcomm `meta-qcom` Wrynose and ROS 2 Jazzy.
 It intentionally rejects `SAHA_ROS_DISTRO=lyrical` until that combination is
 verified. The `iq-9075-evk-open-fw` machine is a separate upstream variant and
@@ -393,6 +404,8 @@ On Jetson and IQ-9075, `saha-image-robot` includes Docker, the official Home Ass
 
 ```bash
 SAHA_HOMEASSISTANT=0 ./scripts/saha-build orin-nx-16g-p3768
+# Or for the Qualcomm EVK:
+SAHA_HOMEASSISTANT=0 ./scripts/saha-build iq-9075-evk
 ```
 
 This omits `docker`, the Home Assistant launcher, the preloaded tarball, and the extra rootfs space reserved for it. ROS 2, USB gadget networking, and WiFi support are unaffected.
