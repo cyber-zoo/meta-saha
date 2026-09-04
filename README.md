@@ -1,6 +1,6 @@
 # meta-saha
 
-`meta-saha` is a Yocto Project distro layer and build framework for NVIDIA Jetson and D-Robotics RDK X5 systems. The primary workflow builds images with kas inside Docker, so the host only needs Docker and does not need kas, bitbake, vcstool, or Yocto build packages installed.
+`meta-saha` is a Yocto Project distro layer and build framework for NVIDIA Jetson, D-Robotics RDK X5, and Qualcomm Dragonwing IQ-9075 systems. The primary workflow builds images with kas inside Docker, so the host only needs Docker and does not need kas, bitbake, vcstool, or Yocto build packages installed.
 
 The Jetson baseline is Yocto Project 6.0 Wrynose and OE4T `meta-tegra` Wrynose, targeting JetPack 7.2 / L4T R39.2.0. RDK X5 uses a separate, pinned Wrynose graph with the [RDKOS 3.5.0](https://developer.d-robotics.cc/rdk_x_doc/Release_Note/release_note) / SDK 1.1.1 release contract and Linux 6.1.83; it does not inherit Tegra layers or moving branch heads.
 
@@ -12,6 +12,7 @@ The Jetson baseline is Yocto Project 6.0 Wrynose and OE4T `meta-tegra` Wrynose, 
 | `agx-thor-devkit` | `jetson-agx-thor-devkit` | Jetson AGX Thor devkit |
 | `agx-orin-devkit` | `jetson-agx-orin-devkit` | Jetson AGX Orin devkit |
 | `rdk-x5` | `rdk-x5` | D-Robotics RDK X5 development board |
+| `iq-9075-evk` | `iq-9075-evk` | Qualcomm Dragonwing IQ-9075 EVK |
 
 List targets with:
 
@@ -24,6 +25,9 @@ List targets with:
 - Docker with permission to run containers as your user.
 - Enough disk space for a Yocto build. A first build can consume hundreds of GB across build output, downloads, and sstate cache.
 - Network access to fetch Yocto, OpenEmbedded, OE4T, NVIDIA, and D-Robotics sources.
+- For `iq-9075-evk`, network access and any credentials required by Qualcomm's
+  proprietary firmware recipes. The public machine metadata is pinned, but
+  vendor artifact availability is checked during the build.
 - For `rdk-x5`, a local checkout of the `meta-d-robotics` BSP layer. Its recipes use fixed official D-Robotics source revisions; pass its location through `SAHA_META_D_ROBOTICS_DIR`.
 
 No host-side Yocto package setup is part of the primary build path.
@@ -42,6 +46,23 @@ Build the other priority targets with:
 ./scripts/saha-build agx-thor-devkit
 ./scripts/saha-build agx-orin-devkit
 ```
+
+Build the standard Qualcomm IQ-9075 EVK target with the same Docker + kas
+workflow:
+
+```bash
+./scripts/saha-build iq-9075-evk
+```
+
+The IQ-9075 graph is pinned to Qualcomm `meta-qcom` Wrynose and ROS 2 Jazzy.
+It intentionally rejects `SAHA_ROS_DISTRO=lyrical` until that combination is
+verified. The `iq-9075-evk-open-fw` machine is a separate upstream variant and
+is not selected by this target.
+
+The silicon/platform reference is Qualcomm's [IQ-9075 product
+page](https://www.qualcomm.com/internet-of-things/products/iq9-series/iq-9075);
+the machine and image behavior come from the upstream
+[`meta-qcom`](https://github.com/qualcomm-linux/meta-qcom) Wrynose layer.
 
 Build RDK X5 with its BSP layer mounted read-only:
 
@@ -102,6 +123,10 @@ SAHA_ROS_DISTRO=lyrical ./scripts/saha-build orin-nx-16g-p3768
 
 RDK X5 deliberately rejects `SAHA_ROS_DISTRO=lyrical`; the independent compatibility graph prevents an unverified ROS/BSP combination from entering an otherwise reproducible build.
 
+The IQ-9075 target uses `kas/targets/iq-9075-evk.yml`, which includes the
+Qualcomm-specific graph and its pinned ROS 2 Jazzy layer. Home Assistant is
+selected by the same `SAHA_HOMEASSISTANT` option as the other targets.
+
 ## Output and caches
 
 Default host paths:
@@ -111,6 +136,7 @@ Default host paths:
 | `build/<target>/` | Default target-specific kas/bitbake build directory for `SAHA_ROS_DISTRO=jazzy` |
 | `build/<target>-ros-<distro>/` | Target-specific kas/bitbake build directory for non-default ROS distros such as `lyrical` |
 | `build/rdk-x5-accelerators/` | Isolated RDK X5 build directory when `SAHA_X5_ACCELERATORS=1` |
+| `build/iq-9075-evk/` | IQ-9075 EVK build directory for the pinned Jazzy graph |
 | `downloads/` | Shared Yocto download cache |
 | `sstate-cache/` | Shared Yocto sstate cache |
 
@@ -154,7 +180,30 @@ With `SAHA_X5_ACCELERATORS=1`, use the equivalent artifact under
 `build/rdk-x5-accelerators/tmp/deploy/images/rdk-x5/`.  Keeping that output
 separate prevents an accelerator build from overwriting the base-image result.
 
+The IQ-9075 image emits Qualcomm's flash package directory and compressed
+archive under:
+
+```text
+build/iq-9075-evk/tmp/deploy/images/iq-9075-evk/saha-image-robot-iq-9075-evk.rootfs.qcomflash/
+build/iq-9075-evk/tmp/deploy/images/iq-9075-evk/saha-image-robot-iq-9075-evk.rootfs.qcomflash.tar.gz
+```
+
+The package contains the rootfs, kernel/device-tree and vendor partition or
+boot files produced by the upstream `qcomflash` image class. It may require
+Qualcomm-provided firmware access during the build. No QDL/EDL command is run
+by `meta-saha`; flash instructions will be provided separately after hardware
+and the exact EVK revision are available.
+
 All Saha robot images use `sahaWorld` as the default static hostname.
+
+## Hardware handoff
+
+The current work stops at Dockerized kas validation and image packaging; no
+IQ-9075 hardware is connected and no device is written. Before a Qualcomm
+flash, confirm the physical EVK revision, obtain the vendor flashing tools and
+firmware authorization, and ask for the target-specific QDL/EDL procedure.
+The generated `.qcomflash` directory and `.tar.gz` archive are the handoff
+artifacts for that later step.
 
 ## Jetson flash and first boot access
 
@@ -339,7 +388,7 @@ This is a fast schema/include/config expansion check. A full `saha-build` still 
 
 ## Home Assistant container
 
-On Jetson, `saha-image-robot` includes Docker, the official Home Assistant container launcher, and a preloaded Home Assistant container image by default. Disable that stack at build time with:
+On Jetson and IQ-9075, `saha-image-robot` includes Docker, the official Home Assistant container launcher, and a preloaded Home Assistant container image by default. Disable that stack at build time with:
 
 ```bash
 SAHA_HOMEASSISTANT=0 ./scripts/saha-build orin-nx-16g-p3768
@@ -347,7 +396,7 @@ SAHA_HOMEASSISTANT=0 ./scripts/saha-build orin-nx-16g-p3768
 
 This omits `docker`, the Home Assistant launcher, the preloaded tarball, and the extra rootfs space reserved for it. ROS 2, USB gadget networking, and WiFi support are unaffected.
 
-The RDK X5 image does not include this Jetson-specific packagegroup.
+The RDK X5 image does not enable this optional packagegroup by default.
 
 During the Yocto build, `saha-homeassistant-container-image` installs the image at `/usr/share/saha/homeassistant/image.tar`. On first boot, `homeassistant-container.service` uses any existing local Docker image first, otherwise runs `docker load` from that tarball, and only pulls remotely when `SAHA_HOMEASSISTANT_PULL=1`.
 
@@ -425,6 +474,7 @@ Supported ROS 2 distros:
 | Jetson | `jazzy` | `kas/include/ros-distro-jazzy.yml` |
 | Jetson | `lyrical` | `kas/include/ros-distro-lyrical.yml` |
 | RDK X5 | `jazzy` | selected by `kas/targets/rdk-x5.yml` |
+| IQ-9075 EVK | `jazzy` | selected by `kas/targets/iq-9075-evk.yml` |
 
 On Jetson only:
 
@@ -444,7 +494,13 @@ ros2 --help
 
 The supported image target is `saha-image-robot`. On Jetson it is layered on the reusable `saha-image-base` recipe and includes the Jetson BSP base, CUDA runtime libraries, OpenSSH bring-up access, USB device-mode networking support, NetworkManager with `nmcli` for WiFi, the configured ROS 2 runtime and CLI tools, and by default Docker with the official Home Assistant container launcher.
 
-For RDK X5, the same image name is supplied by the isolated `meta-rdk-x5-saha` layer. It includes the RDK X5 kernel/DTBs, RDKOS-compatible `boot.scr`, fixed `CONFIG` partition, OpenSSH bring-up access, NetworkManager with `nmcli` for WiFi, deterministic systemd-networkd policies for the non-WiFi interfaces, core robot tools, and the verified Jazzy ROS 2 runtime. It intentionally does not ship or flash a replacement bootloader.  `SAHA_X5_ACCELERATORS=1` adds only the pinned accelerator packagegroups through a separate kas include; it is rejected for Jetson targets and does not alter the default RDK X5 image.
+For RDK X5, the same image name is supplied by the isolated `meta-rdk-x5-saha` layer. It includes the RDK X5 kernel/DTBs, RDKOS-compatible `boot.scr`, fixed `CONFIG` partition, OpenSSH bring-up access, NetworkManager with `nmcli` for WiFi, deterministic systemd-networkd policies for the non-WiFi interfaces, core robot tools, and the verified Jazzy ROS 2 runtime. It intentionally does not ship or flash a replacement bootloader.  `SAHA_X5_ACCELERATORS=1` adds only the pinned accelerator packagegroups through a separate kas include; it is rejected for Jetson and IQ-9075 targets and does not alter the default RDK X5 image.
+
+For IQ-9075, the `meta-qcom-saha` layer supplies only the distro/image
+composition; Qualcomm's `meta-qcom` layer remains responsible for the kernel,
+device trees, firmware, UFS partition layout, U-Boot/UEFI and `qcomflash`
+packaging. This keeps the shared Saha application stack independent of the
+vendor BSP contract.
 
 The image does not include CUDA samples or Jetson GPU container runtime tooling. Add `nvidia-container-toolkit` later through an optional image or kas include if GPU-backed containers are required; OE4T R39.2 removed the old `nvidia-docker` recipe.
 

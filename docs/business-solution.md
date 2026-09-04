@@ -15,6 +15,7 @@ unattended device-flashing service.
 | System integrator | Select a supported board alias, include the Saha robot stack, and locate generated images and RPMs. |
 | Bring-up engineer | Validate a build before hardware is available, then use documented vendor-appropriate flashing steps when hardware is connected. |
 | RDK X5 accelerator integrator | Build an isolated optional accelerator image and run its non-actuating BPU smoke check on hardware. |
+| Qualcomm IQ-9075 integrator | Build the standard IQ-9075 EVK image and hand its upstream-compatible `qcomflash` package to a later hardware bring-up step. |
 
 ## Current, evidenced capabilities
 
@@ -24,8 +25,12 @@ unattended device-flashing service.
   pinned Wrynose graph and mounts `meta-d-robotics` read-only.
 - All current targets build `saha-image-robot`, with a common static hostname
   of `sahaWorld`.
-- Jetson builds can select ROS 2 Jazzy (default) or Lyrical and can opt into a
-  preloaded Home Assistant container. RDK X5 deliberately accepts only Jazzy.
+- Jetson builds can select ROS 2 Jazzy (default) or Lyrical. Jetson and
+  IQ-9075 can opt into a preloaded Home Assistant container; RDK X5 deliberately
+  accepts only Jazzy and does not enable that packagegroup by default.
+- IQ-9075 uses the standard upstream `iq-9075-evk` machine, a pinned Qualcomm
+  `meta-qcom` Wrynose graph, and the same Saha image/application packagegroups
+  as the other supported platforms.
 - RDK X5 has an optional BPU/runtime image and a smoke program that validates
   an inference path without commanding a robot.
 - The RDK X5 TF-card helper requires an explicit image and removable whole
@@ -58,7 +63,8 @@ repository and remain **to be supplied by the business owner**.
 4. The developer collects the image or RPM artifacts under the target build
    directory.
 5. Only after the build is verified and hardware is available does a human run
-   the documented vendor-specific flash procedure.
+   the documented vendor-specific flash procedure. IQ-9075 QDL/EDL is a later
+   handoff and is not executed by this repository's build workflow.
 
 ## Boundaries and risks
 
@@ -67,7 +73,6 @@ repository and remain **to be supplied by the business owner**.
 - Vendor BSP downloads, closed source components, and hardware-specific flash
   tooling can be required outside this repository.
 - Full Yocto builds are network-, time-, and storage-intensive.
-- The currently requested Qualcomm Dragonwing IQ-9075 enablement is a planned
-  extension, not a current supported target. Its machine configuration,
-  firmware source/access, and flashing contract must be verified before it is
-  advertised as supported.
+- Qualcomm firmware/boot artifacts may require vendor access even though the
+  machine and repository revisions are pinned; a successful kas parse does not
+  guarantee that a full package build can fetch every proprietary artifact.

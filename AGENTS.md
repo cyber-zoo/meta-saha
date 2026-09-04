@@ -3,8 +3,9 @@
 ## What this repository is
 
 `meta-saha` is a Yocto Project distro layer and reproducible build framework
-for robot-oriented images. It currently supports NVIDIA Jetson and D-Robotics
-RDK X5 targets; every supported build runs kas inside Docker.
+for robot-oriented images. It supports NVIDIA Jetson, D-Robotics RDK X5, and
+the Qualcomm Dragonwing IQ-9075 EVK; every supported build runs kas inside
+Docker.
 
 ## Quick orientation
 
@@ -13,6 +14,7 @@ RDK X5 targets; every supported build runs kas inside Docker.
   Docker, and Bash.
 - **Primary image:** `saha-image-robot`.
 - **Build entry point:** `./scripts/saha-build <target>`.
+- **Qualcomm target:** `./scripts/saha-build iq-9075-evk` (ROS 2 Jazzy only).
 - **List supported targets:** `./scripts/saha-targets`.
 - **Focused checks:** `bash tests/test-build-framework.sh` and
   `bash tests/test-flash-rdk-x5.sh`.
@@ -51,16 +53,20 @@ Read the relevant document before changing an area:
    duplicated application policy.
 3. Reuse image/application intent where BSP compatibility permits, but keep
    vendor-specific layer graphs and flash procedures isolated.
-4. Treat `build/`, `downloads/`, `sstate-cache/`, `repos/`, and
+4. Put cross-BSP packagegroups, image policy, hostname/SSH bring-up, and the
+   optional Home Assistant stack in `saha-layers/meta-saha-common/`; keep
+   CUDA, RDK BPU/networking, and Qualcomm kernel/firmware/partition metadata
+   in their vendor layers.
+5. Treat `build/`, `downloads/`, `sstate-cache/`, `repos/`, and
    `.docker-cache/` as generated or cached state. Do not hand-edit or commit
    their contents.
-5. Use `SAHA_*` environment variables for documented build options. Validate
+6. Use `SAHA_*` environment variables for documented build options. Validate
    bad combinations before Docker or BitBake starts.
-6. Add or update focused shell tests whenever a wrapper, target mapping,
+7. Add or update focused shell tests whenever a wrapper, target mapping,
    image contract, or flash safety boundary changes.
-7. Keep changes small and independently reversible. Commit completed steps
+8. Keep changes small and independently reversible. Commit completed steps
    with Conventional Commits (for example, `feat(qcom): ...`).
-8. A flash command is a separate, destructive operation. Never invoke one
+9. A flash command is a separate, destructive operation. Never invoke one
    against hardware or a block device without the user's explicit direction.
 
 ## Do not do these things
