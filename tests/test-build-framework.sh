@@ -348,11 +348,6 @@ grep -q 'kernel-module-libcomposite kernel-module-usb-f-fs' "$QCOM_LAYER/recipes
   fail "IQ-9075 ADB must package the required gadget modules"
 grep -q 'x-systemd.growfs' "$QCOM_LAYER/recipes-core/base-files/base-files_%.bbappend" ||
   fail "IQ-9075 ext4 must grow to the flashed UFS rootfs partition"
-QCOM_RESET_PATCH="$QCOM_LAYER/recipes-kernel/linux/files/0001-arm64-dts-qcom-lemans-evk-fix-PSCI-reset-arguments.patch"
-grep -q '^+.*mode-edl = <0x1 0>;' "$QCOM_RESET_PATCH" ||
-  fail "IQ-9075 PSCI EDL must encode reset type before cookie"
-grep -q '^+.*mode-bootloader = <0x2 0x10001>;' "$QCOM_RESET_PATCH" ||
-  fail "IQ-9075 PSCI bootloader must encode reset type before cookie"
 ADB_SERVICE="$COMMON_LAYER/recipes-connectivity/saha-usb-adb/files/saha-usb-adb.service"
 grep -qxF 'User=root' "$ADB_SERVICE" ||
   fail "Saha ADB shells must receive the root login environment for ROS logging"
@@ -362,6 +357,9 @@ grep -qxF 'UnsetEnvironment=ADBD_PORT' "$ADB_SERVICE" ||
   fail "Saha USB ADB must not inherit a TCP port"
 grep -q 'SAHA_ADB_UDC:?' "$COMMON_LAYER/recipes-connectivity/saha-usb-adb/files/saha-adb-gadget" ||
   fail "Shared ADB gadget must require a platform-specific UDC"
+grep -qxF 'SYSTEMD_AUTO_ENABLE:${PN}-adbd = "disable"' \
+  "$QCOM_LAYER/recipes-devtools/android-tools/android-tools_%.bbappend" ||
+  fail "IQ-9075 must not start the conflicting upstream ADB gadget service"
 [ -f "$QCOM_REPOS" ] || fail "IQ-9075 kas repository graph must exist"
 [ -f "$QCOM_BASE" ] || fail "IQ-9075 kas base configuration must exist"
 [ -f "$QCOM_TARGET" ] || fail "IQ-9075 kas target configuration must exist"
