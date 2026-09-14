@@ -37,6 +37,14 @@
 - Add focused assertions to the existing shell tests for each changed command,
   target map, kas composition, image contract, or flash safety rule.
 - Keep README instructions executable and aligned with wrapper behavior.
+- Keep the README overview focused on design purpose and shared software/build
+  workflow. Put baselines in its Supported targets table, with links to
+  `docs/hardware/` for BSP prerequisites, platform variants, artifacts, flashing,
+  and hardware validation. Keep shared application instructions in the README
+  rather than duplicating them in each hardware guide.
+- When moving hardware instructions, preserve safety constraints and existing
+  runbook links; update documentation assertions in the shell tests to follow
+  the new location.
 - Document a hardware action separately from a build action. Never make a test
   perform an actual flash write.
 - Use English for executable contracts and technical documentation, matching

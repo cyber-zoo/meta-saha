@@ -4,6 +4,7 @@ set -euo pipefail
 ROOT_DIR="$(cd -- "$(dirname "${BASH_SOURCE[0]}")/.." >/dev/null 2>&1 && pwd -P)"
 FLASH_SCRIPT="$ROOT_DIR/scripts/saha-flash-rdk-x5"
 README="$ROOT_DIR/README.md"
+HARDWARE_GUIDE="$ROOT_DIR/docs/hardware/rdk-x5.md"
 
 fail() {
   printf 'FAIL: %s\n' "$*" >&2
@@ -31,6 +32,7 @@ expect_failure() {
 
 [ -f "$FLASH_SCRIPT" ] || fail "RDK X5 flash script is missing"
 [ -f "$README" ] || fail "project README is missing"
+[ -f "$HARDWARE_GUIDE" ] || fail "RDK X5 hardware guide is missing"
 bash -n "$FLASH_SCRIPT"
 
 help_output="$("$FLASH_SCRIPT" --help)"
@@ -40,10 +42,12 @@ contains "$help_output" '--device PATH'
 contains "$help_output" '--dry-run'
 contains "$help_output" 'NAND/eMMC firmware'
 
-grep -Fq './scripts/saha-flash-rdk-x5' "$README" ||
-  fail "README must document the guarded RDK X5 flash helper"
-grep -Fq -- '--dry-run --image <image.wic.bz2> --device /dev/sdX' "$README" ||
-  fail "README must document flash-script preflight"
+grep -Fq '(docs/hardware/rdk-x5.md)' "$README" ||
+  fail "README must link to the RDK X5 hardware guide"
+grep -Fq './scripts/saha-flash-rdk-x5' "$HARDWARE_GUIDE" ||
+  fail "hardware guide must document the guarded RDK X5 flash helper"
+grep -Fq -- '--dry-run --image <image.wic.bz2> --device /dev/sdX' "$HARDWARE_GUIDE" ||
+  fail "hardware guide must document flash-script preflight"
 
 expect_failure '--image is required' "$FLASH_SCRIPT" --dry-run --device /dev/null
 

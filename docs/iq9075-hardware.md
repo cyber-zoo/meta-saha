@@ -1,5 +1,7 @@
 # IQ-9075 EVK hardware bring-up
 
+[IQ-9075 build guide](hardware/iq9075.md) · [Supported hardware](hardware/README.md)
+
 ## Scope and access
 
 The user authorized flashing the connected WNC IQ-9075 EVK on 2026-09-14.
