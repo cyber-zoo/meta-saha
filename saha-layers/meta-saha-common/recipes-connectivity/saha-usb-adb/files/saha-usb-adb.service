@@ -5,6 +5,8 @@ After=sys-kernel-config.mount
 
 [Service]
 Type=simple
+# Explicit User also gives ADB shells systemd's HOME/LOGNAME login environment.
+User=root
 RuntimeDirectory=saha-adbd
 EnvironmentFile=/etc/default/saha-usb-adb
 UnsetEnvironment=ADBD_PORT
