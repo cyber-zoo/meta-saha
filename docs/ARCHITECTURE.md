@@ -42,7 +42,9 @@ composes pinned OpenEmbedded, Linux-firmware mixin, meta-virtualization,
 meta-ROS Jazzy, and Qualcomm `meta-qcom` Wrynose repositories, then adds the
 local common and `meta-qcom-saha` layers. The upstream `iq-9075-evk` machine
 selects the QCS9100-family kernel, firmware, device trees and UFS partition
-metadata; Saha contributes only the shared image/application policy.
+metadata; Saha composes the shared image/application policy and the EVK's
+runtime supplier modules, USB-C ADB selection, and rootfs growth. The kernel
+and DT sources remain unchanged from the pinned upstream BSP.
 
 Future vendor support must follow the same separation: use a dedicated BSP
 graph and Saha layer for vendor-specific metadata, then share only the

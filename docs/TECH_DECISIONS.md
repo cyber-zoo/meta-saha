@@ -5,7 +5,7 @@
 | Docker + kas is the primary entry point | Keeps the host free of kas, BitBake, and Yocto build-package setup, while mounting persistent downloads, sstate, and output caches. |
 | Wrynose is the current Yocto baseline | The current Jetson framework targets Yocto Project 6.0 Wrynose with OE4T Wrynose. The RDK X5 graph also pins a Wrynose-compatible contract rather than relying on moving branch heads. |
 | Vendor graphs stay separate | Tegra and RDK X5 have materially different BSP, kernel, firmware, and artifact contracts. Isolation prevents a board-specific dependency from accidentally altering another platform. |
-| Qualcomm uses an isolated IQ-9075 graph | The standard `iq-9075-evk` machine is sourced from Qualcomm `meta-qcom` Wrynose. Its kernel, firmware, device trees, UFS partition files, and `qcomflash` class stay upstream-owned; only the Saha application/image contract is shared. |
+| Qualcomm uses an isolated IQ-9075 graph | The standard `iq-9075-evk` machine comes from pinned `meta-qcom` Wrynose. Keep firmware, UFS layout and qcomflash upstream; limit local kernel corrections to reviewed, machine-scoped compatibility patches. Share application/image intent, not a vendor BSP graph. |
 | `meta-saha-common` owns cross-BSP application policy | Base tools, NetworkManager/Wi-Fi, systemd helpers, ROS 2, hostname/SSH bring-up, and the optional Home Assistant stack are defined once. Vendor layers add only BSP-specific packages such as CUDA, USB gadget, RDK networking/BPU, or Qualcomm firmware. |
 | `saha-image-robot` is the primary image | The repository keeps a single developer-facing image intent and builds vendor-specific deliverables from it, rather than maintaining unrelated image targets for each application stack. |
 | Application features use overlays/packagegroups | ROS distributions, Home Assistant, and RDK X5 accelerators are composed as optional kas includes or packagegroups so base image policy remains auditable and reversible. |
@@ -20,8 +20,15 @@ the `iq-9075-evk-open-fw` variant. The graph pins the Wrynose-compatible
 OpenEmbedded/BitBake, Linux-firmware mixin, meta-ROS Jazzy, meta-virtualization,
 and Qualcomm `meta-qcom` revisions in `kas/include/repos-qcom-wrynose.yml`.
 The image emits the upstream `.qcomflash` directory and tarball. Proprietary
-firmware access and hardware-specific QDL/EDL steps remain a later handoff;
-they are not executed or encoded in the build wrapper.
+firmware access and hardware-specific QDL/EDL steps remain separate from the
+build wrapper. Authorized September 2026 hardware bring-up and recovery are
+recorded in [the hardware runbook](iq9075-hardware.md).
+
+The native USB ADB helper is shared with the Ubuntu recovery bundle, but
+runtime binaries stay OS-native. QCOM's image uses OE-built adbd; only the
+Ubuntu repair carries isolated Debian libraries. UDC selection and kernel
+supplier packages remain in the QCOM layer. Root USB access is explicitly a
+development policy and does not enable network ADB.
 
 ## Decisions requiring a maintainer or hardware confirmation
 

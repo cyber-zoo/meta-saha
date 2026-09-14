@@ -202,19 +202,21 @@ build/iq-9075-evk/tmp/deploy/images/iq-9075-evk/saha-image-robot-iq-9075-evk.roo
 The package contains the rootfs, kernel/device-tree and vendor partition or
 boot files produced by the upstream `qcomflash` image class. It may require
 Qualcomm-provided firmware access during the build. No QDL/EDL command is run
-by `meta-saha`; flash instructions will be provided separately after hardware
-and the exact EVK revision are available.
+by the build wrapper; see the separate [hardware runbook](docs/iq9075-hardware.md)
+for authorized flashing, device selection, backups, and recovery.
 
 All Saha robot images use `sahaWorld` as the default static hostname.
 
 ## Hardware handoff
 
-The IQ-9075 Saha image has passed Dockerized kas build and packaging, but has
-not been flashed or boot-tested. The connected EVK currently runs Ubuntu
-24.04.4. USB `adb shell` bring-up on that Ubuntu system is documented in
-[IQ-9075 Ubuntu ADB repair](support/iq9075-ubuntu-adb/README.md), including
-reproducible runtime packaging, debugging, rollback, and the separate EDL
-handoff. This repair does not add ADB to the Yocto image.
+The IQ-9075 EVK now boots the Docker/kas-built Saha image. Native USB root
+ADB, reboot persistence, WiFi, and ROS 2 topic delivery have passed hardware
+checks. ADB-to-Fastboot entry works; direct software EDL remains unresolved,
+with Alpaca providing verified EDL recovery. See
+[IQ-9075 hardware bring-up](docs/iq9075-hardware.md) for commands, backups,
+and remaining peripheral limitations.
+The [Ubuntu ADB repair](support/iq9075-ubuntu-adb/README.md) is retained for
+restoring/debugging the previous Ubuntu system, not for the Saha runtime.
 
 Before a Qualcomm flash, confirm the physical EVK revision and vendor
 firmware/tool requirements. The generated `.qcomflash` directory and
@@ -514,8 +516,9 @@ The supported image target is `saha-image-robot`. On Jetson it is layered on the
 
 For RDK X5, the same image name is supplied by the isolated `meta-rdk-x5-saha` layer. It includes the RDK X5 kernel/DTBs, RDKOS-compatible `boot.scr`, fixed `CONFIG` partition, OpenSSH bring-up access, NetworkManager with `nmcli` for WiFi, deterministic systemd-networkd policies for the non-WiFi interfaces, core robot tools, and the verified Jazzy ROS 2 runtime. It intentionally does not ship or flash a replacement bootloader.  `SAHA_X5_ACCELERATORS=1` adds only the pinned accelerator packagegroups through a separate kas include; it is rejected for Jetson and IQ-9075 targets and does not alter the default RDK X5 image.
 
-For IQ-9075, the `meta-qcom-saha` layer supplies only the distro/image
-composition; Qualcomm's `meta-qcom` layer remains responsible for the kernel,
+For IQ-9075, the `meta-qcom-saha` layer supplies distro/image composition,
+board-specific ADB/module policy and rootfs growth;
+Qualcomm's `meta-qcom` remains responsible for the kernel,
 device trees, firmware, UFS partition layout, U-Boot/UEFI and `qcomflash`
 packaging. This keeps the shared Saha application stack independent of the
 vendor BSP contract.

@@ -1,8 +1,11 @@
 # IQ-9075 Ubuntu USB ADB repair
 
 This is an on-device repair for Ubuntu 24.04 ARM64. It is not a Yocto recipe
-and does not add ADB to `saha-image-robot`. Continue to use Docker/kas for Saha
-image builds. The September 2026 Saha image has not been flashed onto this EVK.
+and is not the ADB runtime installed in `saha-image-robot`. Continue to use
+Docker/kas for Saha builds. On 2026-09-14 the EVK was backed up and flashed
+with Saha; its native Yocto ADB is documented in the
+[hardware runbook](../../docs/iq9075-hardware.md). This Ubuntu recovery bundle
+now reuses the gadget helper from `meta-saha-common`.
 
 ## Diagnosis and verified state
 
@@ -30,8 +33,9 @@ On 2026-09-14 the following passed on hardware:
 - Service restart via the existing tio socket followed by USB ADB reconnect.
 - No adbd TCP listener on the board; systemd unit verification.
 
-Cold boot and actual EDL entry have not been tested. No flash or reboot was
-performed. Existing unrelated Aidlux unit warnings are not ADB failures.
+Later that day, Ubuntu's actual ADB-to-EDL transition also passed before the
+authorized Saha flash. A cold boot of this Ubuntu repair was not tested.
+Existing unrelated Aidlux unit warnings were not ADB failures.
 
 ## Daily use
 
@@ -55,12 +59,14 @@ policy. The service requires FunctionFS before adbd starts and removes
 `ADBD_PORT` from its environment, avoiding the daemon's TCP fallback. Do not
 enable TCP ADB on a shared network without a separate access-control design.
 
-## Later: enter EDL through adb shell
+## Enter EDL through the Ubuntu adb shell
 
 Read-only checks on this board found `/psci/mode-edl = <0 1>`,
 `psci_init_system_reset2_modes` and `psci_reset_params` in the running kernel,
 and systemd 255 acceptance of `--reboot-argument=edl`. These are the expected
-PSCI vendor RESET2 prerequisites; final firmware behavior remains untested.
+PSCI vendor RESET2 prerequisites; Ubuntu-to-EDL was subsequently verified by
+USB enumeration and QDL chip serial detection. This evidence applies to the
+Ubuntu kernel, not automatically to another kernel's DT/reset implementation.
 
 Only when ready to leave Ubuntu and enter flash mode, run:
 
