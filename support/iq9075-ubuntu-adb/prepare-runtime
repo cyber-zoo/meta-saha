@@ -3,6 +3,7 @@
 set -euo pipefail
 
 source_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+gadget_script="$source_dir/../../saha-layers/meta-saha-common/recipes-connectivity/saha-usb-adb/files/saha-adb-gadget"
 if [[ $# != 1 ]]; then
     echo "Usage: $0 NEW_OUTPUT_DIRECTORY" >&2
     exit 2
@@ -37,5 +38,5 @@ tar -czf runtime.tar.gz -C payload \
     usr/share/doc/adbd usr/share/doc/android-libbase \
     usr/share/doc/android-libcutils usr/share/doc/android-liblog \
     usr/share/doc/android-libboringssl
-cp "$source_dir/saha-adb-gadget" "$source_dir/saha-adbd.service" .
+cp "$gadget_script" "$source_dir/saha-adbd.service" .
 sha256sum runtime.tar.gz saha-adb-gadget saha-adbd.service > bundle.sha256

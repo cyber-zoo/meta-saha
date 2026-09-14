@@ -39,6 +39,9 @@ local_conf_header:
     # repository with a sizeable history. Shallow-fetch that source as well;
     # the recipe still verifies the pinned tag contents and license files.
     BB_GIT_SHALLOW:pn-hexagon-dsp-binaries = "1"
+    # Device-side ADB uses five fixed Android source revisions. Fetch only
+    # those revisions rather than their complete upstream histories.
+    BB_GIT_SHALLOW:pn-android-tools = "1"
   saha-qcom-boot: |
     # Keep the upstream QCOM recovery/download-mode contract. This only
     # affects the generated image metadata; it does not access hardware.

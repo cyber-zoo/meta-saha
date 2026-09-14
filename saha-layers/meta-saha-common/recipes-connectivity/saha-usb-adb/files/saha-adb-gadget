@@ -1,10 +1,10 @@
 #!/bin/sh
-# USB-only development ADB for the Ubuntu IQ-9075 EVK.
+# Shared USB-only development ADB; each platform must select its own UDC.
 set -eu
 
 gadget=/sys/kernel/config/usb_gadget/saha-adb
 ffs=/dev/usb-ffs/adb
-udc=${SAHA_ADB_UDC:-a600000.usb}
+udc=${SAHA_ADB_UDC:?Set SAHA_ADB_UDC to the board USB device controller}
 owned=/run/saha-adbd/gadget-owned
 
 case "${1:-}" in
@@ -34,7 +34,7 @@ case "${1:-}" in
         echo 0x0100 > "$gadget/idProduct"
         mkdir "$gadget/strings/0x409"
         echo Saha > "$gadget/strings/0x409/manufacturer"
-        echo 'IQ-9075 Ubuntu ADB' > "$gadget/strings/0x409/product"
+        echo "${SAHA_ADB_PRODUCT:-Saha USB ADB}" > "$gadget/strings/0x409/product"
         serial=$(sha256sum /etc/machine-id)
         echo "${serial%% *}" > "$gadget/strings/0x409/serialnumber"
         mkdir "$gadget/configs/c.1"

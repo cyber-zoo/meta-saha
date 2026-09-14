@@ -1,0 +1,19 @@
+[Unit]
+Description=Saha USB development ADB
+Wants=sys-kernel-config.mount
+After=sys-kernel-config.mount
+
+[Service]
+Type=simple
+RuntimeDirectory=saha-adbd
+EnvironmentFile=/etc/default/saha-usb-adb
+UnsetEnvironment=ADBD_PORT
+ExecStartPre=/usr/sbin/saha-adb-gadget setup
+ExecStartPre=/usr/bin/test -e /dev/usb-ffs/adb/ep0
+ExecStart=/usr/bin/adbd
+ExecStartPost=/usr/sbin/saha-adb-gadget activate
+ExecStopPost=/usr/sbin/saha-adb-gadget cleanup
+TimeoutStartSec=30
+
+[Install]
+WantedBy=multi-user.target

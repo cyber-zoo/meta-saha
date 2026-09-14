@@ -338,6 +338,23 @@ QCOM_TARGET="$ROOT_DIR/kas/targets/iq-9075-evk.yml"
 [ -f "$QCOM_LAYER/conf/layer.conf" ] || fail "IQ-9075 Saha layer configuration must exist"
 [ -f "$QCOM_LAYER/conf/distro/saha-qcom.conf" ] || fail "IQ-9075 distro configuration must exist"
 [ -f "$QCOM_LAYER/recipes-saha/images/saha-image-robot.bb" ] || fail "IQ-9075 image recipe must exist"
+QCOM_IMAGE="$QCOM_LAYER/recipes-saha/images/saha-image-robot.bb"
+for package in saha-usb-adb kernel-module-at24 kernel-module-pwrseq-pcie-m2; do
+  grep -q "$package" "$QCOM_IMAGE" || fail "IQ-9075 bring-up image must include $package"
+done
+grep -qxF 'SAHA_ADB_UDC=a600000.usb' "$QCOM_LAYER/recipes-connectivity/saha-usb-adb/files/saha-usb-adb.conf" ||
+  fail "IQ-9075 USB ADB must select the USB-C controller explicitly"
+grep -q 'kernel-module-libcomposite kernel-module-usb-f-fs' "$QCOM_LAYER/recipes-connectivity/saha-usb-adb/saha-usb-adb.bbappend" ||
+  fail "IQ-9075 ADB must package the required gadget modules"
+grep -q 'x-systemd.growfs' "$QCOM_LAYER/recipes-core/base-files/base-files_%.bbappend" ||
+  fail "IQ-9075 ext4 must grow to the flashed UFS rootfs partition"
+ADB_SERVICE="$COMMON_LAYER/recipes-connectivity/saha-usb-adb/files/saha-usb-adb.service"
+grep -qxF 'ExecStartPre=/usr/bin/test -e /dev/usb-ffs/adb/ep0' "$ADB_SERVICE" ||
+  fail "Saha ADB must require FunctionFS before starting the daemon"
+grep -qxF 'UnsetEnvironment=ADBD_PORT' "$ADB_SERVICE" ||
+  fail "Saha USB ADB must not inherit a TCP port"
+grep -q 'SAHA_ADB_UDC:?' "$COMMON_LAYER/recipes-connectivity/saha-usb-adb/files/saha-adb-gadget" ||
+  fail "Shared ADB gadget must require a platform-specific UDC"
 [ -f "$QCOM_REPOS" ] || fail "IQ-9075 kas repository graph must exist"
 [ -f "$QCOM_BASE" ] || fail "IQ-9075 kas base configuration must exist"
 [ -f "$QCOM_TARGET" ] || fail "IQ-9075 kas target configuration must exist"

@@ -7,6 +7,7 @@ After=sys-kernel-config.mount
 Type=notify
 RuntimeDirectory=saha-adbd
 Environment=SAHA_ADB_UDC=a600000.usb
+Environment="SAHA_ADB_PRODUCT=IQ-9075 Ubuntu ADB"
 Environment=LD_LIBRARY_PATH=/opt/saha-adbd/usr/lib/aarch64-linux-gnu/android
 UnsetEnvironment=ADBD_PORT
 ExecStartPre=/usr/local/sbin/saha-adb-gadget setup
