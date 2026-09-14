@@ -1,0 +1,41 @@
+#!/bin/bash
+# Repackage official ARM64 binaries; no compilation or device installation.
+set -euo pipefail
+
+source_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+if [[ $# != 1 ]]; then
+    echo "Usage: $0 NEW_OUTPUT_DIRECTORY" >&2
+    exit 2
+fi
+for command in curl dpkg-deb sha256sum tar; do
+    command -v "$command" >/dev/null
+done
+# Require a new directory, preserving previous bundles and downloaded evidence.
+mkdir -- "$1"
+cd -- "$1"
+mkdir packages payload
+cp "$source_dir/packages.sha256" packages/
+cd packages
+while read -r digest package; do
+    case "$package" in
+        android-libboringssl_*) project=android-platform-external-boringssl ;;
+        *) project=android-platform-tools ;;
+    esac
+    curl --fail --location --retry 2 --connect-timeout 15 --max-time 120 \
+        "https://deb.debian.org/debian/pool/main/a/$project/$package" -o "$package"
+    echo "$digest  $package" | sha256sum --check --strict -
+done < packages.sha256
+sha256sum --check --strict packages.sha256
+for package in *.deb; do
+    dpkg-deb --extract "$package" ../payload
+done
+cd ..
+# Keep the binary, its private Android libraries, and upstream license notices.
+tar -czf runtime.tar.gz -C payload \
+    usr/lib/android-sdk/platform-tools/adbd \
+    usr/lib/aarch64-linux-gnu/android \
+    usr/share/doc/adbd usr/share/doc/android-libbase \
+    usr/share/doc/android-libcutils usr/share/doc/android-liblog \
+    usr/share/doc/android-libboringssl
+cp "$source_dir/saha-adb-gadget" "$source_dir/saha-adbd.service" .
+sha256sum runtime.tar.gz saha-adb-gadget saha-adbd.service > bundle.sha256

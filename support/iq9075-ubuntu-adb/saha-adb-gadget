@@ -1,0 +1,84 @@
+#!/bin/sh
+# USB-only development ADB for the Ubuntu IQ-9075 EVK.
+set -eu
+
+gadget=/sys/kernel/config/usb_gadget/saha-adb
+ffs=/dev/usb-ffs/adb
+udc=${SAHA_ADB_UDC:-a600000.usb}
+owned=/run/saha-adbd/gadget-owned
+
+case "${1:-}" in
+    setup)
+        attempt=0
+        until test -d "/sys/class/udc/$udc"; do
+            attempt=$((attempt + 1))
+            if test "$attempt" -ge 100; then
+                echo "USB device controller $udc is unavailable" >&2
+                exit 1
+            fi
+            sleep 0.1
+        done
+        modprobe libcomposite
+        modprobe usb_f_fs
+        mountpoint -q /sys/kernel/config || mount -t configfs none /sys/kernel/config
+        # Refuse to overwrite an existing gadget or FunctionFS mount.
+        test ! -d "$gadget"
+        if mountpoint -q "$ffs"; then
+            echo "ADB FunctionFS is already in use" >&2
+            exit 1
+        fi
+        mkdir "$gadget"
+        mkdir -p /run/saha-adbd
+        touch "$owned"
+        echo 0x18d1 > "$gadget/idVendor"
+        echo 0x0100 > "$gadget/idProduct"
+        mkdir "$gadget/strings/0x409"
+        echo Saha > "$gadget/strings/0x409/manufacturer"
+        echo 'IQ-9075 Ubuntu ADB' > "$gadget/strings/0x409/product"
+        serial=$(sha256sum /etc/machine-id)
+        echo "${serial%% *}" > "$gadget/strings/0x409/serialnumber"
+        mkdir "$gadget/configs/c.1"
+        mkdir "$gadget/configs/c.1/strings/0x409"
+        echo ADB > "$gadget/configs/c.1/strings/0x409/configuration"
+        echo 0xc0 > "$gadget/configs/c.1/bmAttributes"
+        echo 0 > "$gadget/configs/c.1/MaxPower"
+        mkdir "$gadget/functions/ffs.adb"
+        ln -s "$gadget/functions/ffs.adb" "$gadget/configs/c.1/ffs.adb"
+        mkdir -p "$ffs"
+        mount -t functionfs adb "$ffs"
+        test -e "$ffs/ep0"
+        ;;
+    activate)
+        # sd_notify occurs before the USB worker necessarily publishes endpoints.
+        attempt=0
+        until test -e "$ffs/ep1" && test -e "$ffs/ep2"; do
+            attempt=$((attempt + 1))
+            if test "$attempt" -ge 100; then
+                echo 'adbd did not publish FunctionFS endpoints' >&2
+                exit 1
+            fi
+            sleep 0.1
+        done
+        echo "$udc" > "$gadget/UDC"
+        ;;
+    cleanup)
+        test -f "$owned" || exit 0
+        test -d "$gadget" || exit 0
+        if test -n "$(cat "$gadget/UDC")"; then
+            echo '' > "$gadget/UDC"
+        fi
+        if mountpoint -q "$ffs"; then
+            umount "$ffs"
+        fi
+        test ! -L "$gadget/configs/c.1/ffs.adb" || unlink "$gadget/configs/c.1/ffs.adb"
+        for dir in configs/c.1/strings/0x409 configs/c.1 functions/ffs.adb strings/0x409; do
+            test ! -d "$gadget/$dir" || rmdir "$gadget/$dir"
+        done
+        rmdir "$gadget"
+        unlink "$owned"
+        ;;
+    *)
+        echo "Usage: $0 {setup|activate|cleanup}" >&2
+        exit 2
+        ;;
+esac

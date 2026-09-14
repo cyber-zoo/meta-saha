@@ -209,12 +209,16 @@ All Saha robot images use `sahaWorld` as the default static hostname.
 
 ## Hardware handoff
 
-The current work stops at Dockerized kas validation and image packaging; no
-IQ-9075 hardware is connected and no device is written. Before a Qualcomm
-flash, confirm the physical EVK revision, obtain the vendor flashing tools and
-firmware authorization, and ask for the target-specific QDL/EDL procedure.
-The generated `.qcomflash` directory and `.tar.gz` archive are the handoff
-artifacts for that later step.
+The IQ-9075 Saha image has passed Dockerized kas build and packaging, but has
+not been flashed or boot-tested. The connected EVK currently runs Ubuntu
+24.04.4. USB `adb shell` bring-up on that Ubuntu system is documented in
+[IQ-9075 Ubuntu ADB repair](support/iq9075-ubuntu-adb/README.md), including
+reproducible runtime packaging, debugging, rollback, and the separate EDL
+handoff. This repair does not add ADB to the Yocto image.
+
+Before a Qualcomm flash, confirm the physical EVK revision and vendor
+firmware/tool requirements. The generated `.qcomflash` directory and
+`.tar.gz` archive remain the artifacts for that later, explicit operation.
 
 ## Jetson flash and first boot access
 

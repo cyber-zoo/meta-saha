@@ -1,0 +1,20 @@
+[Unit]
+Description=Saha USB ADB for IQ-9075 Ubuntu development
+Wants=sys-kernel-config.mount
+After=sys-kernel-config.mount
+
+[Service]
+Type=notify
+RuntimeDirectory=saha-adbd
+Environment=SAHA_ADB_UDC=a600000.usb
+Environment=LD_LIBRARY_PATH=/opt/saha-adbd/usr/lib/aarch64-linux-gnu/android
+UnsetEnvironment=ADBD_PORT
+ExecStartPre=/usr/local/sbin/saha-adb-gadget setup
+ExecStartPre=/usr/bin/test -e /dev/usb-ffs/adb/ep0
+ExecStart=/opt/saha-adbd/usr/lib/android-sdk/platform-tools/adbd
+ExecStartPost=/usr/local/sbin/saha-adb-gadget activate
+ExecStopPost=/usr/local/sbin/saha-adb-gadget cleanup
+TimeoutStartSec=30
+
+[Install]
+WantedBy=multi-user.target
