@@ -145,6 +145,54 @@ and eight enabled units. Four symlink regression tests passed. Target execution
 and physical board validation are separate gates. Revert the checker increment
 to remove this inspection interface; image package behavior is unchanged.
 
+## Execute the image software without a board
+
+The runtime checker requires a working ARM64 QEMU `binfmt_misc` registration
+inside Docker, with the fix-binary flag, and the documented Wrynose builder
+image. It does not install/change the host's emulator registration. Extract
+the actual built archive inside a disposable container; keep image/source
+mounts read-only and disconnect the container from external networks.
+
+```sh
+deploy="$PWD/build/radxa-zero-3w/tmp/deploy/images/radxa-zero-3w"
+reports="$PWD/build/validation/radxa-zero-3w/runtime"
+mkdir -p "$reports"
+docker run --rm --user 0:0 --network none \
+    -e SAHA_MICRODUCK_EMULATION=1 \
+    -v "$deploy:/image:ro" \
+    -v "$PWD/tests/check-microduck-runtime.py:/check.py:ro" \
+    -v "$reports:/reports" \
+    meta-saha-yocto-builder:wrynose bash -ec '
+        mkdir /tmp/target
+        tar --zstd -xpf /image/saha-image-robot-radxa-zero-3w.rootfs.tar.zst -C /tmp/target
+        python3 /check.py --rootfs /tmp/target --output /reports --seconds 60
+    '
+```
+
+Substitute `orangepi-zero3w` for the other image. Root is used only inside this
+container for chroot and isolated standard character devices. No host D-Bus,
+network, robot UART, audio device or physical media is mounted. Every robot
+invocation contains `--fake`. Temporary benchmark TOML enables policies and
+disables physical audio in the disposable copy; production defaults are retained
+in the archive. Fake initialization exercises IPC without commanding a board.
+
+The check executes all eleven ARM64 binaries, probes six required GStreamer
+elements, runs finite H.264 and Opus/RTP pipelines, validates nine systemd units
+with the image's own `systemd-analyze`, and runs updater's read-only self-test.
+Commissioning, v5 walk, alpha walk/stand and roller profiles cover all ten
+networks' real load/inference warmups. It samples control-loop progress during
+the 60-second walk profile, checks policy errors and fake initialization, then
+tests configd IPC with fake Wi-Fi/gamepads and mediad's test-source/HTTP startup.
+Media pipeline/discovery errors fail the check even if HTTP remains reachable.
+Detailed logs and health samples accompany `runtime.json`.
+
+2026-10-02: the Radxa image with the codec-discovery correction passed this
+complete suite. All 60 walk-profile health samples were healthy, with no missed
+ticks; all ten model warmups passed. Media discovery and the test-source pipeline
+passed after the required dependency was added. This is software execution under
+emulation, not measured board timing, radio/audio operation or a gait endurance
+test. Revert the runtime-check increment to remove this verification interface.
+
 ## Radio UART transport
 
 `microduck-bluetooth-uart` supplies the shared foreground systemd service for
