@@ -145,6 +145,55 @@ and eight enabled units. Four symlink regression tests passed. Target execution
 and physical board validation are separate gates. Revert the checker increment
 to remove this inspection interface; image package behavior is unchanged.
 
+## Inspect SD boot artifacts
+
+Run the boot checker against the matching WIC and extracted archive. It needs
+host `sfdisk`, `fdtget`, `debugfs` and `e2fsck`, plus Python 3.11+. It reads the
+image as a regular file and checks a temporary copy of the ext4 partition;
+no loop device, physical media or mounted filesystem is used.
+
+```sh
+deploy=build/radxa-zero-3w/tmp/deploy/images/radxa-zero-3w
+python3 tests/check-microduck-boot.py \
+    --wic "$deploy/saha-image-robot-radxa-zero-3w.rootfs.wic" \
+    --deploy "$deploy" \
+    --rootfs build/validation/radxa-zero-3w/rootfs \
+    --machine radxa-zero-3w
+python3 tests/test-microduck-boot.py
+```
+
+For Orange Pi, decompress its `.wic.gz` into a new inspection file and use the
+corresponding archive and deploy directory:
+
+```sh
+deploy=build/orangepi-zero3w/tmp/deploy/images/orangepi-zero3w
+gzip -dc "$deploy/saha-image-robot-orangepi-zero3w.rootfs.wic.gz" \
+    > build/validation/orangepi-zero3w/image.wic
+python3 tests/check-microduck-boot.py \
+    --wic build/validation/orangepi-zero3w/image.wic \
+    --deploy "$deploy" \
+    --rootfs build/validation/orangepi-zero3w/rootfs \
+    --machine orangepi-zero3w
+```
+
+The checker validates partition offsets/bounds, GPT CRCs where applicable,
+byte-identical boot inputs, ext4 consistency and representative archive/WIC
+files. It checks the selected HAT DT, motor UART console removal and codec/I2C
+configuration. Radxa uses the FIT's default HAT configuration; A733 requires
+both legacy header CRCs, an ARM header with the specified addresses and the
+exact AArch64 Image payload. Six regression cases reject corrupt or
+incompatible uImages. The JSON report includes the WIC and boot-input hashes.
+A passing inspection proves artifact consistency; actual boot is a board gate.
+
+2026-10-02: both actual completed WIC images passed this inspection. Radxa
+uses GPT with root at 16 MiB; A733 uses MBR with root at 32 MiB and byte-identical
+boot0/TOC1 inputs at the vendor offsets. Both ext4 consistency checks and all
+representative archive/WIC comparisons passed. Their selected HAT DTs and
+FIT/uImage checks passed. The A733 rootfs checker also passed all contracts
+against its 677-package manifest. Six corrupt/incompatible-header tests and
+the four image-symlink tests passed. Revert this checker increment to remove
+the artifact inspection interface; image contents are unchanged.
+
 ## Execute the image software without a board
 
 The runtime checker requires a working ARM64 QEMU `binfmt_misc` registration
@@ -192,6 +241,55 @@ ticks; all ten model warmups passed. Media discovery and the test-source pipelin
 passed after the required dependency was added. This is software execution under
 emulation, not measured board timing, radio/audio operation or a gait endurance
 test. Revert the runtime-check increment to remove this verification interface.
+
+## Board commissioning and stability record
+
+Promote each exact image only after recording its SHA256, Saha/BSP commits,
+board revision, radio variant and HAT wiring. The artifact/emulation reports
+qualify software inputs; boot, electrical interfaces and gait need board
+measurements. Keep the previous qualified SD image and a separate backup of
+`/etc/robot`, identity and calibration for rollback. Upstream Debian OTA stays
+disabled; replacing an image requires restoring the appropriate board data.
+
+First boot with actuators disconnected or held quiescent. Earlier boot stages
+can transmit on the motor UART despite Linux console removal. Confirm the
+kernel/DT and aliases, inspect service failures and audio/radio enumeration,
+then commission the Dynamixel bus, body IMU (bus ID 200), HOME and mounting.
+An unconnected bus reporting degraded health is expected at this stage.
+`policy.enabled=false` disables gait; explicit initialization can still apply
+torque. Motion commissioning is a separate operator action.
+
+Read-only evidence commands on the board include:
+
+```sh
+uname -a
+readlink -f /dev/serial0 /dev/i2c-pihat
+systemctl --failed --no-pager
+systemctl status robotd configd btd padd mediad updaterd \
+    microduck-audio-init microduck-bluetooth-uart --no-pager
+journalctl -b -u robotd -u mediad -u microduck-audio-init \
+    -u microduck-bluetooth-uart --no-pager
+robotctl version --json
+robotctl health --json
+robotctl net status --json
+bluetoothctl list
+aplay -l
+```
+
+After commissioning, collect control-loop ticks, achieved rate, missed ticks,
+bus errors, consecutive stale IMU reads, CPU/temperature and service restart
+counts during a sustained run with media, radio and gamepad traffic. Require
+no loop stalls, recurring degraded health, model fallback, codec errors or
+crash/restart loop; investigate missed-tick/error rates rather than using a
+single healthy sample. Test both Radxa radio variants separately. Verify sound
+and approved motion on each HAT, including recovery after network loss and a
+reboot. Record the chosen test duration/load and observed limits; the present
+60-second emulation suite establishes no physical endurance claim.
+
+If a new revision fails, restore the previous qualified image and its matching
+configuration/calibration, then repeat the same checks. Reverting one source
+commit is a code rollback point; it does not automatically restore mutable
+robot state or qualify a newly built image.
 
 ## Radio UART transport
 
