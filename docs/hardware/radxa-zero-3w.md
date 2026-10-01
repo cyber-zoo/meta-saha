@@ -69,3 +69,27 @@ regressions passed. Actual kernel-module compilation, full package/rootfs QA
 and physical radio behavior remain gates for the full image run.
 
 Rollback: revert this radio increment before removing the shared UART helper.
+
+## Pinned boot firmware fetch
+
+The thin layer fetches only the upstream-selected DDR v1.23, shared RK3568
+BL31 v1.44 and license from rkbin revision
+`f43a462e7a1429a9d407ae52b4745033034a6cf9`. Named SHA256 checks isolate and
+validate each cached input; upstream source names, proprietary license checksum
+and deploy paths remain intact. The three files total 463,128 bytes and were
+checked against the official commit's Git blob IDs. This avoids fetching the
+multi-platform binary repository's entire history without a Rockchip fork.
+
+The selected DDR blob is unmodified (`RKBIN_DDR_RECONFIGURE=0`). Requesting
+reconfiguration fails explicitly: that path needs the upstream Git history,
+parameter file and native tool rather than this selective fetch.
+
+2026-10-02: Docker `saha-shell radxa-zero-3w -c 'bitbake
+rockchip-rkbin-ddr rockchip-rkbin-tf-a'` **PASS**, 856 tasks; real checksum
+verification, unpack/source staging, license checks, deployment, RPM packaging
+and package QA succeeded. Deployed DDR/BL31 hashes match their pinned inputs.
+This proves boot-component packaging; the full SD image and board boot have
+their own validation gates.
+
+Rollback: revert this fetch correction to restore upstream Git fetching. It
+does not change any boot bytes or upstream repository revision.
