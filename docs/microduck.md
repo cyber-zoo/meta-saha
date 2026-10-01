@@ -20,6 +20,13 @@ regressions, Bash syntax and whitespace checks passed. The graph contains
 no meta-ROS checkout; `packagegroup-saha-ros2` remains available to graphs
 that register `ros2-layer`.
 
+The Microduck kas base declares the custom build-tuning environment keys so
+kas passes them through to BitBake. Example: `SAHA_BB_NUMBER_THREADS=7`,
+`SAHA_BB_NUMBER_PARSE_THREADS=3` and `SAHA_PARALLEL_MAKE='-j 6'` resolve to
+`7`, `3` and `-j 6` via `bitbake-getvar --value` inside `saha-shell`.
+2026-10-02: this resolver check passed in the pinned Radxa graph. Docker
+environment forwarding alone does not prove kas/BitBake received these keys.
+
 Every build claim records the command, source revisions and its actual level:
 parse, package, image or hardware. Small Conventional Commits provide rollback
 points. Revert consuming commits before changes to their dependencies.

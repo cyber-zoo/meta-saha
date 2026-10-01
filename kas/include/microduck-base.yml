@@ -7,6 +7,12 @@ distro: saha-microduck
 target:
   - saha-image-robot
 
+# kas filters custom environment variables unless they are declared here.
+env:
+  SAHA_BB_NUMBER_THREADS: "4"
+  SAHA_BB_NUMBER_PARSE_THREADS: "4"
+  SAHA_PARALLEL_MAKE: "-j 4"
+
 repos:
   meta-saha:
     layers:
