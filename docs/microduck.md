@@ -96,6 +96,40 @@ A successful build must be followed by rootfs, service, library and model
 checks before claiming runtime validation. Physical radio, bus timing and gait
 stability still require board evidence.
 
+## Inspect a built image
+
+Extract the generated rootfs into a new inspection directory, preserving image
+permissions. The checker resolves absolute image symlinks inside that directory,
+including the usrmerge and `/opt/robot` links; host paths are never substituted.
+It requires host Python 3.11+ and `readelf` and does not execute target binaries.
+
+```sh
+deploy=build/radxa-zero-3w/tmp/deploy/images/radxa-zero-3w
+mkdir -p build/validation/radxa-zero-3w/rootfs
+tar --zstd -xf "$deploy/saha-image-robot-radxa-zero-3w.rootfs.tar.zst" \
+    -C build/validation/radxa-zero-3w/rootfs --no-same-owner
+python3 tests/check-microduck-rootfs.py \
+    --rootfs build/validation/radxa-zero-3w/rootfs \
+    --manifest "$deploy/saha-image-robot-radxa-zero-3w.rootfs.manifest" \
+    --machine radxa-zero-3w
+python3 tests/test-microduck-rootfs.py
+```
+
+Substitute `orangepi-zero3w` for the other target. Inspect against the same
+metadata revision used to build the image (`--metadata` accepts a frozen clone).
+The checker fails on missing runtime/board/radio packages, ROS/container files,
+incorrect release identity, missing direct ELF dependencies, model checksum
+changes, unqualified power/OTA defaults, disabled required services or missing
+accounts/UART/module metadata. Its JSON report records precisely what passed.
+
+2026-10-02: the frozen `5402a42` Radxa graph completed all 5,183 build tasks,
+including AIC SDIO compilation against Linux 6.18.39, package/rootfs/image QA,
+WIC, tar rootfs and SPDX. Inspection of that actual rootfs passed: 1,248
+packages, all eleven daemon binaries, ONNX/GST dependencies, ten policy models
+and eight enabled units. Four symlink regression tests passed. Target execution
+and physical board validation are separate gates. Revert the checker increment
+to remove this inspection interface; image package behavior is unchanged.
+
 ## Radio UART transport
 
 `microduck-bluetooth-uart` supplies the shared foreground systemd service for
