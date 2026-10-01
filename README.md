@@ -6,8 +6,9 @@ across hardware platforms, sharing common configuration and software while
 keeping vendor BSPs and board-specific policy in separate layers.
 
 The primary workflow builds `saha-image-robot` with kas inside Docker. Target
-configurations select the hardware integration; shared layers provide ROS 2,
-WiFi tooling, and optional Home Assistant support. The host does not need kas,
+configurations select the hardware integration; shared layers provide ROS 2
+or the ROS-free [Microduck runtime](docs/microduck.md), WiFi tooling, and
+optional Home Assistant support. The host does not need kas,
 bitbake, vcstool, or Yocto build packages installed.
 
 ## Supported targets
@@ -19,6 +20,7 @@ bitbake, vcstool, or Yocto build packages installed.
 | `agx-orin-devkit` | `jetson-agx-orin-devkit` | [Jetson AGX Orin devkit](docs/hardware/jetson.md) | Yocto 6.0 Wrynose; OE4T meta-tegra Wrynose; JetPack 7.2 / L4T R39.2.0 |
 | `rdk-x5` | `rdk-x5` | [D-Robotics RDK X5](docs/hardware/rdk-x5.md) | Pinned Wrynose; RDKOS 3.5.0 / SDK 1.1.1; Linux 6.1.83 |
 | `iq-9075-evk` | `iq-9075-evk` | [Qualcomm Dragonwing IQ-9075 EVK](docs/hardware/iq9075.md) | Pinned Wrynose / Qualcomm meta-qcom; ROS 2 Jazzy |
+| `radxa-zero-3w` | `radxa-zero-3w` | [Radxa ZERO 3W](docs/hardware/radxa-zero-3w.md) | Pinned Wrynose / upstream meta-rockchip; ROS-free Microduck integration in progress |
 
 List targets with:
 
@@ -64,7 +66,7 @@ Default host paths:
 
 | Path | Purpose |
 | --- | --- |
-| `build/<target>/` | Default target-specific kas/bitbake build directory for `SAHA_ROS_DISTRO=jazzy` |
+| `build/<target>/` | Default target-specific kas/bitbake build directory for Jazzy or ROS-free Microduck targets |
 | `build/<target>-ros-<distro>/` | Target-specific kas/bitbake build directory for non-default ROS distros such as `lyrical` |
 | `downloads/` | Shared Yocto download cache |
 | `sstate-cache/` | Shared Yocto sstate cache |

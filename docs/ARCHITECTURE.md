@@ -23,6 +23,8 @@ user
 | `saha-layers/meta-tegra-support/` | OE4T support classes and Jetson compatibility metadata. |
 | `saha-layers/meta-rdk-x5-saha/` | RDK X5-specific distro, images, packagegroups, networking, and accelerator integration. |
 | `saha-layers/meta-qcom-saha/` | Qualcomm Dragonwing IQ-9075 distro/image composition; the upstream `meta-qcom` layer owns BSP and flash metadata. |
+| `saha-layers/meta-saha-microduck/` | ROS-free Microduck distro/image and shared runtime policy. |
+| `saha-layers/meta-rockchip-saha/` | Radxa board integration over pinned upstream `meta-rockchip`. |
 | `tests/` | Executable contracts for wrappers, image options, and RDK X5 flash safety. |
 
 ## Platform graphs
@@ -49,6 +51,11 @@ and DT sources remain unchanged from the pinned upstream BSP.
 Future vendor support must follow the same separation: use a dedicated BSP
 graph and Saha layer for vendor-specific metadata, then share only the
 application/image contracts proven compatible across platforms.
+
+Radxa ZERO 3W uses a pinned `meta-rockchip`/`meta-arm` Wrynose graph, with a
+shared Microduck application layer and a thin board layer. The graph omits
+meta-ROS and meta-virtualization. The common ROS packagegroup loads only when
+`ros2-layer` is registered; existing ROS consumers select the same packages.
 
 ## Dependency direction
 

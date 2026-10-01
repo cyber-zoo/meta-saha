@@ -1,0 +1,26 @@
+header:
+  version: 17
+  includes:
+    - kas/include/microduck-base.yml
+
+machine: radxa-zero-3w
+
+repos:
+  meta-arm:
+    path: repos/meta-arm
+    url: https://git.yoctoproject.org/meta-arm
+    branch: wrynose
+    commit: 673e8d7c5dcd14de58092eb73e6ecc5eee5c1735
+    layers:
+      meta-arm:
+      meta-arm-toolchain:
+
+  meta-rockchip:
+    path: repos/meta-rockchip
+    url: https://git.yoctoproject.org/meta-rockchip
+    branch: wrynose
+    commit: 9d02575bfd9ca5e87c394f593f2bbdbdee914d4e
+
+  meta-saha:
+    layers:
+      saha-layers/meta-rockchip-saha:

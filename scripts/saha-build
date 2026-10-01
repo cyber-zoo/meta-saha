@@ -16,6 +16,8 @@ SAHA_HOMEASSISTANT=0 to omit the optional Docker and preloaded Home Assistant
 image on Jetson and IQ-9075. RDK X5 requires SAHA_META_D_ROBOTICS_DIR to point
 to its BSP layer.
 Run scripts/saha-targets to list targets.
+Radxa ZERO 3W uses the ROS-free Microduck graph; ROS and Home Assistant are
+disabled by default and cannot be enabled on this target.
 USAGE
 }
 

@@ -1,0 +1,30 @@
+header:
+  version: 17
+  includes:
+    - kas/include/repos-microduck-wrynose.yml
+
+distro: saha-microduck
+target:
+  - saha-image-robot
+
+repos:
+  meta-saha:
+    layers:
+      saha-layers/meta-saha-microduck:
+
+local_conf_header:
+  saha-cache: |
+    DL_DIR ?= "${@os.environ.get('DL_DIR', '${TOPDIR}/downloads')}"
+    SSTATE_DIR ?= "${@os.environ.get('SSTATE_DIR', '${TOPDIR}/sstate-cache')}"
+    BB_HASHSERVE_DB_DIR ?= "${SSTATE_DIR}"
+  saha-build-defaults: |
+    PACKAGE_CLASSES = "package_rpm"
+    SDKMACHINE = "x86_64"
+    EXTRA_IMAGE_FEATURES = "empty-root-password allow-root-login"
+    PATCHRESOLVE = "noop"
+    INHERIT += "rm_work"
+    BB_GIT_SHALLOW = "1"
+  saha-build-tuning: |
+    BB_NUMBER_THREADS ?= "${@os.environ.get('SAHA_BB_NUMBER_THREADS', '4')}"
+    BB_NUMBER_PARSE_THREADS ?= "${@os.environ.get('SAHA_BB_NUMBER_PARSE_THREADS', '4')}"
+    PARALLEL_MAKE ?= "${@os.environ.get('SAHA_PARALLEL_MAKE', '-j 4')}"

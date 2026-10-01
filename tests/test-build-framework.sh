@@ -25,6 +25,7 @@ contains "$targets_output" "rdk-x5"
 contains "$targets_output" "D-Robotics RDK X5"
 contains "$targets_output" "iq-9075-evk"
 contains "$targets_output" "Qualcomm Dragonwing IQ-9075"
+contains "$targets_output" "radxa-zero-3w"
 if [[ "$targets_output" == *"ros"* ]] || [[ "$targets_output" == *"ROS"* ]]; then
   fail "supported target list must not include ROS targets"
 fi
@@ -59,6 +60,24 @@ contains "$qcom_dry_run_output" "/work/sstate-cache"
 if [[ "$qcom_dry_run_output" == *"tegra"* ]] || [[ "$qcom_dry_run_output" == *"meta-d-robotics"* ]]; then
   fail "IQ-9075 Docker command must not select another BSP graph"
 fi
+
+radxa_output="$(SAHA_DRY_RUN=1 "$ROOT_DIR/scripts/saha-build" radxa-zero-3w)"
+contains "$radxa_output" "kas build kas/targets/radxa-zero-3w.yml"
+contains "$radxa_output" "/build/radxa-zero-3w:/work/build/radxa-zero-3w"
+contains "$radxa_output" "KAS_CLONE_DEPTH=1"
+if [[ "$radxa_output" == *"ros-distro"* ]] || [[ "$radxa_output" == *"homeassistant-container.yml"* ]]; then
+  fail "Radxa Microduck defaults must not select ROS or Home Assistant"
+fi
+for option in SAHA_ROS_DISTRO=jazzy SAHA_HOMEASSISTANT=1 SAHA_HOMEASSISTANT=maybe SAHA_X5_ACCELERATORS=1; do
+  if env SAHA_DRY_RUN=1 "$option" "$ROOT_DIR/scripts/saha-build" radxa-zero-3w >/tmp/saha-microduck-invalid.out 2>&1; then
+    fail "Microduck target unexpectedly accepted $option"
+  fi
+  if grep -q 'docker ' /tmp/saha-microduck-invalid.out; then
+    fail "Microduck input validation must fail before Docker"
+  fi
+done
+explicit_radxa_output="$(SAHA_DRY_RUN=1 SAHA_ROS_DISTRO=none SAHA_HOMEASSISTANT=off "$ROOT_DIR/scripts/saha-build" radxa-zero-3w)"
+contains "$explicit_radxa_output" "kas build kas/targets/radxa-zero-3w.yml"
 
 if SAHA_DRY_RUN=1 SAHA_ROS_DISTRO=lyrical "$ROOT_DIR/scripts/saha-build" iq-9075-evk >/tmp/saha-iq-9075-lyrical.out 2>&1; then
   fail "IQ-9075 unexpectedly accepted ROS 2 Lyrical"

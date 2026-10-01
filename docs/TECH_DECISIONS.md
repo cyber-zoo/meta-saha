@@ -10,6 +10,8 @@
 | `saha-image-robot` is the primary image | The repository keeps a single developer-facing image intent and builds vendor-specific deliverables from it, rather than maintaining unrelated image targets for each application stack. |
 | Application features use overlays/packagegroups | ROS distributions, Home Assistant, and RDK X5 accelerators are composed as optional kas includes or packagegroups so base image policy remains auditable and reversible. |
 | ROS 2 Jazzy is default | Jazzy is the documented default. Lyrical is explicitly supported only for Jetson; RDK X5 rejects it to protect its independently verified graph. |
+| Microduck targets are ROS-free | Small boards select `saha-microduck` and shared Microduck packages. They default to `SAHA_ROS_DISTRO=none` / `SAHA_HOMEASSISTANT=0` and reject those optional stacks to keep the runtime graph narrow. Existing targets retain their defaults. |
+| Rockchip remains upstream | Pin Wrynose `meta-rockchip` and `meta-arm`; use a thin board overlay for Microduck UART, codec and radio requirements. Avoid a BSP fork for an already supported upstream machine. |
 | RDK X5 accelerator output is isolated | `SAHA_X5_ACCELERATORS=1` selects a separate graph and build directory, so a BPU/runtime build cannot overwrite the base image result. |
 | Flashing is not part of ordinary builds | Build artifacts are safe to create without hardware. Flashing has vendor-specific risk; the RDK helper enforces removable-media checks and confirmation, while Jetson instructions remain separate. |
 

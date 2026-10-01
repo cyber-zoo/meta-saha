@@ -13,6 +13,7 @@ agx-thor-devkit|jetson-agx-thor-devkit|AGX Thor devkit P3834-0008 module in P407
 agx-orin-devkit|jetson-agx-orin-devkit|AGX Orin devkit P3701-0000 module in P3737-0000 carrier
 rdk-x5|rdk-x5|D-Robotics RDK X5 development board
 iq-9075-evk|iq-9075-evk|Qualcomm Dragonwing IQ-9075 Evaluation Kit
+radxa-zero-3w|radxa-zero-3w|Radxa ZERO 3W RK3566 Microduck board
 TARGETS
 }
 
@@ -83,7 +84,22 @@ saha_require_ros_distro() {
 }
 
 saha_current_ros_distro() {
+  if saha_is_microduck_target "${1:-}"; then
+    if [ "${SAHA_ROS_DISTRO:-none}" != "none" ]; then
+      printf 'Microduck targets require SAHA_ROS_DISTRO=none (default)\n' >&2
+      return 2
+    fi
+    printf '%s\n' "none"
+    return 0
+  fi
   saha_require_ros_distro "${SAHA_ROS_DISTRO:-$(saha_default_ros_distro)}"
+}
+
+saha_is_microduck_target() {
+  case "$1" in
+    radxa-zero-3w|orangepi-zero3w) return 0 ;;
+    *) return 1 ;;
+  esac
 }
 
 saha_default_homeassistant() {
@@ -140,8 +156,22 @@ saha_x5_accelerators_mode() {
 saha_kas_config_for_target() {
   local target=$1
   local ros_distro x5_accelerators kas_config
-  ros_distro="$(saha_current_ros_distro)" || return $?
+  ros_distro="$(saha_current_ros_distro "$target")" || return $?
   x5_accelerators="$(saha_x5_accelerators_mode)" || return $?
+
+  if saha_is_microduck_target "$target"; then
+    if [ "$x5_accelerators" = "1" ]; then
+      printf 'SAHA_X5_ACCELERATORS is supported only for rdk-x5\n' >&2
+      return 2
+    fi
+    SAHA_HOMEASSISTANT="${SAHA_HOMEASSISTANT:-0}" saha_require_homeassistant_setting || return $?
+    if SAHA_HOMEASSISTANT="${SAHA_HOMEASSISTANT:-0}" saha_homeassistant_enabled; then
+      printf 'Microduck targets require SAHA_HOMEASSISTANT=0 (default)\n' >&2
+      return 2
+    fi
+    printf 'kas/targets/%s.yml\n' "$target"
+    return 0
+  fi
 
   if [ "$target" = "rdk-x5" ]; then
     if [ "$ros_distro" != "jazzy" ]; then
@@ -237,8 +267,8 @@ saha_build_dir() {
     printf '%s\n' "$root_dir/build/rdk-x5-accelerators"
     return 0
   fi
-  ros_distro="$(saha_current_ros_distro)" || return $?
-  if [ "$ros_distro" = "$(saha_default_ros_distro)" ]; then
+  ros_distro="$(saha_current_ros_distro "$target")" || return $?
+  if [ "$ros_distro" = "none" ] || [ "$ros_distro" = "$(saha_default_ros_distro)" ]; then
     printf '%s\n' "$root_dir/build/$target"
     return 0
   fi
@@ -429,6 +459,11 @@ saha_docker_args() {
 
   printf '%s\n' \
     "-e" "GIT_HTTP_VERSION=${GIT_HTTP_VERSION:-HTTP/1.1}"
+
+  if saha_is_microduck_target "$target"; then
+    # kas still checks out the exact pinned commits; omit unrelated Git history.
+    printf '%s\n' "-e" "KAS_CLONE_DEPTH=1"
+  fi
 
   printf '%s\n' \
     "-e" "GIT_CONFIG_COUNT=1" \

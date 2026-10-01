@@ -11,6 +11,7 @@ the root [Supported targets table](../../README.md#supported-targets).
 | NVIDIA Jetson | `orin-nx-16g-p3768`, `agx-thor-devkit`, `agx-orin-devkit` | [Build, flash, and first boot](jetson.md) |
 | D-Robotics RDK X5 | `rdk-x5` | [Base/accelerator builds and guarded TF-card flashing](rdk-x5.md) |
 | Qualcomm Dragonwing IQ-9075 EVK | `iq-9075-evk` | [Build and image scope](iq9075.md); [ADB, flash, recovery, and validation limits](../iq9075-hardware.md) |
+| Radxa ZERO 3W / RK3566 | `radxa-zero-3w` | [ROS-free build and hardware gates](radxa-zero-3w.md) |
 
 Build support does not imply every peripheral or software variant has been
 validated on hardware. Consult the guide and its validation records before

@@ -15,6 +15,7 @@ support ROS 2 Jazzy and Lyrical; IQ-9075 and RDK X5 are pinned to Jazzy. The
 optional Home Assistant image is available on Jetson and IQ-9075. RDK X5
 requires SAHA_META_D_ROBOTICS_DIR.
 Run scripts/saha-targets to list targets.
+Radxa ZERO 3W uses the ROS-free Microduck graph.
 USAGE
 }
 
