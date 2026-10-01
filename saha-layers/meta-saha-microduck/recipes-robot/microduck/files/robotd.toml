@@ -1,0 +1,18 @@
+# Generic commissioning defaults. Preserve per-robot calibration in /etc/robot.
+[bus]
+port = "/dev/serial0"
+fast_sync_read = false
+
+[control]
+hz = 50
+
+[policy]
+enabled = false
+
+[media]
+# The WebRTC control channel remains available before camera qualification.
+source = "test"
+
+[audio]
+enabled = true
+device = "plughw:aic3104"

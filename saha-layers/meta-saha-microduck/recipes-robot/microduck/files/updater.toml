@@ -1,0 +1,25 @@
+trusted_keys_dir = "/etc/robot/trusted_keys"
+hw_rev = 1
+state_dir = "/var/lib/robot/updater"
+robot_socket = "/run/robotd.sock"
+allow_dev_keys = false
+allow_fault_injection = false
+auto_apply = "off"
+allow_users = []
+
+# No check_interval: Debian release hooks must not update a Yocto base image.
+# A future Saha-qualified runtime feed uses a distinct tag prefix.
+[component.daemon]
+install_dir = "/opt/robot/daemon"
+keep_previous = 1
+[component.daemon.source]
+type = "github_releases"
+repo = "pollen-robotics/microduck"
+tag_prefix = "saha-daemon-v"
+manifest_asset = "manifest.json"
+[component.daemon.on_apply]
+action = "restart"
+units = ["robotd", "configd", "btd", "padd", "mediad"]
+[component.daemon.health]
+probe = "socket"
+timeout = "30s"

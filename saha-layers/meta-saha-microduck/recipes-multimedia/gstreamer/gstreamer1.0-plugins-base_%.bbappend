@@ -1,0 +1,1 @@
+PACKAGECONFIG = "${GSTREAMER_ORC} alsa opus"

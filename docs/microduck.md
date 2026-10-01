@@ -23,3 +23,56 @@ that register `ros2-layer`.
 Every build claim records the command, source revisions and its actual level:
 parse, package, image or hardware. Small Conventional Commits provide rollback
 points. Revert consuming commits before changes to their dependencies.
+
+## Runtime contract
+
+The image packages the official stable `daemon-v0.15.0` ARM64 release, source
+`a9ec4b2079ef8ee7904014089c885bb07d57d63c`, ONNX Runtime 1.28.0 and policy set
+v5. Every archive/model has a SHA256 fetch check. Policies are Apache-2.0 per
+the [upstream model card](https://huggingface.co/pollen-robotics/microduck-policies/blob/main/README.md).
+Weights and upstream binaries are fetched or reused from a checksum-verified
+download cache; they are not copied into this repository. Recipe-specific
+`already-stripped` QA exceptions apply to published binaries. Dynamic library
+QA remains enabled. The release source/license is fetched alongside its
+binaries. This build packages the published runtime; it does not compile Rust
+daemon sources.
+
+The enabled units are `robotd`, `configd`, `btd`, `padd`, `mediad` and `updaterd`.
+They retain upstream account/sandbox boundaries. `tofd` is installed and may
+be enabled when its optional sensor is fitted. BlueZ D-Bus access belongs to
+the `btd` account; motor control runs as root. The `robot` group permits IPC
+access. `/etc/robot/*.toml` are configuration files preserved by package updates;
+no device-specific identity, credentials, private keys or calibration is seeded.
+
+`/opt/robot/daemon/current` selects `releases/0.15.0` and
+`/opt/robot/policies/current` selects `releases/seed-v5`. `robotctl` is on PATH.
+The runtime loads `/usr/lib/libonnxruntime.so.1` via `ORT_DYLIB_PATH`.
+GStreamer uses the MPL-2.0 upstream Microduck v3 WebRTC/RTP plugins and x264
+software encoding. A low-rate test source keeps the control channel available
+without a qualified camera/NPU/MPP stack. OpenGL and PulseAudio backfill is
+explicitly disabled in this headless distro; GST optional GUI plugins are
+excluded. The accepted commercial flags are scoped to x264 and its GST plugin.
+
+Generic commissioning starts with `policy.enabled=false`, a 50 Hz loop and
+ordinary Sync Read. Fit/commission the bus and IMU, validate HOME and mounting,
+then change the policy setting before requesting motion. Board-specific 5 V
+power/IMU settings belong in the board configuration, not a universal default.
+
+Scheduled upstream OTA is disabled: Debian release hooks install packages with
+apt and have not been qualified for Yocto. The updater serves status with a
+distinct `saha-daemon-v` feed prefix and no non-root mutation allowlist. Do not
+apply the ordinary Debian daemon feed. Qualified Saha package/image updates
+must retain board calibration and use the recorded rollback procedure.
+
+The `.tar.zst` rootfs accompanies the board SD `.wic` for inspection/emulation.
+A successful build must be followed by rootfs, service, library and model
+checks before claiming runtime validation. Physical radio, bus timing and gait
+stability still require board evidence.
+
+2026-10-01 runtime metadata milestone: image task dry-run passed 8,066 tasks.
+After narrowing headless media/default features, the final graph parsed with
+zero errors and resolved 297 recipes, containing no ROS, Docker, Rust compiler,
+LLVM or Mesa provider. Framework/flash regressions and TOML/whitespace checks
+passed. Full package and image QA remains a subsequent validation step. Model
+downloads used locally cached v5 bytes checked against the recipe SHA256s;
+direct Hugging Face access from this host timed out.
