@@ -4,6 +4,24 @@ Run `./scripts/saha-build radxa-zero-3w` for the ROS-free Microduck graph.
 `SAHA_ROS_DISTRO=none` and `SAHA_HOMEASSISTANT=0` are this target's defaults.
 ROS, Home Assistant and RDK accelerator options are rejected before Docker.
 
+## Current validation
+
+2026-10-02: complete `saha-image-robot` build and package/rootfs/image QA
+passed, including the AIC SDIO module on Linux 6.18.39. A clean metadata build
+at Saha `b03ae0f` completed all 5,183 tasks. The actual 1,249-package rootfs
+and GPT WIC passed dependency/model/service and boot/FIT/HAT inspections.
+Isolated ARM64 software execution passed all ten model inference warmups,
+config IPC, systemd unit verification and media test-source startup. All 60
+walk-profile health samples were healthy with no missed ticks under FakeIo.
+
+See [the image checks and commissioning procedure](../microduck.md).
+Local results are `build/validation/radxa-zero-3w/qualification.json`,
+`rootfs.json`, `boot.json` and `runtime-gst-discovery/`. Physical boot, UART/IMU,
+both radio variants, gamepad, audio and sustained gait remain unverified.
+The dated notes below retain the validation levels of earlier increments.
+
+## BSP and HAT
+
 The graph pins Wrynose OE-Core/BitBake/meta-openembedded, upstream
 `meta-rockchip` at `9d02575bfd9ca5e87c394f593f2bbdbdee914d4e` and `meta-arm`
 at `673e8d7c5dcd14de58092eb73e6ecc5eee5c1735`. The machine remains upstream
@@ -27,8 +45,8 @@ with the HAT's AIC3104 codec at address 0x18 and external 12 MHz clock.
 speaker mixer levels before robotd starts. Card timeout or mixer failures
 are reported by systemd. This assumes the Microduck HAT wiring.
 
-Support is experimental until image, boot, bus, IMU, policy, radio, gamepad
-and audio gates in [the Microduck guide](../microduck.md) have evidence.
+Board support remains experimental until physical boot, bus/IMU, radio,
+gamepad, audio and gait checks in the Microduck guide have evidence.
 
 2026-10-01: `saha-validate` expanded the pinned graph; `saha-shell ... -c
 'bitbake -p'` parsed 3,067 recipes with zero errors and selected `linux-yocto`.

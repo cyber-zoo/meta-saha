@@ -3,9 +3,10 @@
 ## What this repository is
 
 `meta-saha` is a Yocto Project distro layer and reproducible build framework
-for robot-oriented images. It supports NVIDIA Jetson, D-Robotics RDK X5, and
-the Qualcomm Dragonwing IQ-9075 EVK; every supported build runs kas inside
-Docker.
+for robot-oriented images. Targets include NVIDIA Jetson, D-Robotics RDK X5,
+Qualcomm Dragonwing IQ-9075 EVK, Radxa ZERO 3W and Orange Pi Zero 3W; every
+supported build runs kas inside Docker. The two small-board targets use the
+shared ROS-free Microduck layer and separate BSP graphs.
 
 ## Quick orientation
 
@@ -40,6 +41,7 @@ Read the relevant document before changing an area:
 | Naming, metadata, shell, and commit rules | `docs/CONVENTIONS.md` |
 | Why the build graph is structured this way | `docs/TECH_DECISIONS.md` |
 | Definition of done and validation | `docs/QUALITY.md` |
+| Microduck image/runtime checks and commissioning | `docs/microduck.md` |
 | Current implementation plans | `docs/exec-plans/active/` |
 | Unscheduled work | `docs/exec-plans/backlog.md` |
 | Known code-quality work | `docs/exec-plans/tech-debt-tracker.md` |
@@ -56,7 +58,9 @@ Read the relevant document before changing an area:
 4. Put cross-BSP packagegroups, image policy, hostname/SSH bring-up, and the
    optional Home Assistant stack in `saha-layers/meta-saha-common/`; keep
    CUDA, RDK BPU/networking, and Qualcomm kernel/firmware/partition metadata
-   in their vendor layers.
+   in their vendor layers. Keep Microduck application/runtime policy in
+   `meta-saha-microduck` and board consumers in the thin Rockchip/Allwinner
+   Saha layers; the independent BSP owns kernel/boot sources.
 5. Treat `build/`, `downloads/`, `sstate-cache/`, `repos/`, and
    `.docker-cache/` as generated or cached state. Do not hand-edit or commit
    their contents.

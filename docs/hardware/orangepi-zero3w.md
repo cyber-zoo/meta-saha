@@ -4,14 +4,31 @@ Run `./scripts/saha-build orangepi-zero3w` for the shared ROS-free Microduck
 image. This is the A733 board, distinct from Orange Pi Zero 3 / H618.
 ROS, Home Assistant and RDK accelerator options are rejected before Docker.
 
+## Current validation
+
+2026-10-02: clean Saha `b03ae0f` with BSP `b3bfd8b` completed all 6,445
+build tasks. Vendor Linux 6.6.98, all modules, native uImage and ARM32 boot
+packing/package QA passed. The complete 677-package rootfs and MBR WIC passed
+dependency/model/service, ext4, boot-offset, uImage and HAT DT inspection.
+Isolated ARM64 software execution passed all ten model inference warmups,
+config IPC, systemd unit verification and media test-source startup. All 60
+walk-profile health samples were healthy with no missed ticks under FakeIo.
+
+See [the image checks and commissioning procedure](../microduck.md).
+Local results are `build/validation/orangepi-zero3w/qualification.json`,
+`rootfs.json`, `boot.json` and `runtime/`. Physical boot, UART/IMU, radio,
+gamepad, audio and sustained gait remain unverified. The dated notes below
+retain the validation levels of earlier increments.
+
 ## BSP boundary and build
 
 The standalone `meta-allwinner` repository owns kernel, ARM32 U-Boot, closed
 boot assets and the SD layout. The default location is `../meta-allwinner`;
 set `SAHA_META_ALLWINNER_DIR=/path/to/meta-allwinner` to override it. Saha
 checks the layer identity and mounts it read-only at `/work/meta-allwinner`.
-Keep the external BSP's commit in your build records. The initial SD contract
-is `950275c` (and its preceding kernel/U-Boot increments).
+Keep the external BSP's commit in your build records. Use tested baseline
+`b3bfd8b` or a separately validated later revision; the initial `950275c` SD
+metadata predates the actual kernel/packing/WIC corrections.
 
 `kas/targets/orangepi-zero3w.yml` selects pinned Wrynose OE-Core, BitBake and
 meta-openembedded plus this external layer, `meta-saha-common`,
@@ -81,8 +98,9 @@ remain. The Saha + ARM32 multiconfig graph parsed 6,194 recipes with zero errors
 and resolved 6,406 image tasks in a dry-run. Real variable checks selected the
 ARM uImage header, Microduck DT and display-only console.
 
-This is metadata/DT validation. Full image/package builds, boot, bus timing,
-ONNX inference, audio and radio tests are subsequent gates. See the
+That increment established metadata/DT validation; current image and emulation
+results are recorded above. Physical boot, bus timing, audio and radio retain
+their separate gates. See the
 [Microduck runtime contract](../microduck.md). Building performs no physical
 media write or robot movement.
 

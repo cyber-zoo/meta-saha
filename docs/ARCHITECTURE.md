@@ -25,7 +25,8 @@ user
 | `saha-layers/meta-qcom-saha/` | Qualcomm Dragonwing IQ-9075 distro/image composition; the upstream `meta-qcom` layer owns BSP and flash metadata. |
 | `saha-layers/meta-saha-microduck/` | ROS-free Microduck distro/image and shared runtime policy. |
 | `saha-layers/meta-rockchip-saha/` | Radxa board integration over pinned upstream `meta-rockchip`. |
-| `tests/` | Executable contracts for wrappers, image options, and RDK X5 flash safety. |
+| `saha-layers/meta-allwinner-saha/` | Orange Pi HAT/radio consumers over the independent sibling `meta-allwinner` BSP. |
+| `tests/` | Wrapper/flash contracts, Microduck image inspection and isolated ARM64 software execution. |
 
 ## Platform graphs
 
@@ -56,6 +57,19 @@ Radxa ZERO 3W uses a pinned `meta-rockchip`/`meta-arm` Wrynose graph, with a
 shared Microduck application layer and a thin board layer. The graph omits
 meta-ROS and meta-virtualization. The common ROS packagegroup loads only when
 `ros2-layer` is registered; existing ROS consumers select the same packages.
+
+Orange Pi Zero 3W/A733 shares that Microduck application layer, with its own
+pinned Wrynose graph and `meta-allwinner-saha` board overlay. The independently
+maintained `meta-allwinner` repository is mounted read-only and owns the vendor
+kernel, firmware, ARM32 U-Boot multiconfig and SD boot packing. Linux/userspace
+remain AArch64; the bootloader's different architecture stays inside the BSP.
+Its MBR SD image and Radxa's GPT/FIT image retain separate boot contracts.
+
+Both targets emit `saha-image-robot`, without ROS, Docker or Home Assistant.
+The shared application layer owns immutable Microduck/ONNX/model inputs,
+service configuration and commissioning defaults. Artifact and runtime checks
+are documented in [the Microduck guide](microduck.md); they complement each
+platform's kernel/package QA and subsequent physical qualification.
 
 ## Dependency direction
 

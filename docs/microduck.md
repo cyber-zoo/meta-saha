@@ -6,6 +6,47 @@ kernel, boot, firmware and device trees; Saha owns runtime dependencies,
 services and application configuration. Existing Jetson/RDK/Qualcomm images
 keep their ROS selection.
 
+## Completed software baseline
+
+2026-10-02: clean Saha metadata `b03ae0f` completed both full image builds,
+using upstream meta-rockchip `9d02575` for Radxa and independent BSP `b3bfd8b`
+for A733. Verified sstate was reused in the final builds. Package/rootfs QA,
+SD/tar artifacts and SPDX/SBOM passed; actual rootfs and boot inspections and
+the isolated ARM64 software suite passed for both platforms.
+
+| Target | Build tasks | Rootfs packages | SD output | Physical qualification |
+| --- | ---: | ---: | --- | --- |
+| `radxa-zero-3w` | 5,183 | 1,249 | GPT `.wic` + bmap | Pending |
+| `orangepi-zero3w` | 6,445 | 677 | MBR `.wic.gz` + bmap | Pending |
+
+Both images include daemon 0.15.0, ONNX Runtime 1.28.0, ten pinned v5 models,
+eight enabled runtime/readiness units and no ROS/container stack. Both suites
+passed all model inference warmups, config IPC, finite H.264/Opus-RTP pipelines,
+target systemd verification and error-checked media startup. Each 60-second
+fake walk run yielded 60 healthy samples with no missed ticks. This qualifies
+software under emulation; real board timing, peripherals and gait need the
+commissioning evidence below. Generic images keep gait disabled until fitted
+and commissioned.
+
+Outputs are in `build/<target>/tmp/deploy/images/<target>/`. Local handoff
+records are `build/validation/<target>/qualification.json`, `SHA256SUMS`,
+`rootfs.json` and `boot.json`. Runtime logs/reports are in Radxa's
+`runtime-gst-discovery/` and A733's `runtime/` beneath those directories.
+The initial Radxa `runtime/` result was invalidated by media errors and is
+marked accordingly; use the corrected report. Frozen build revisions above
+precede documentation-only completion updates.
+
+Qualified SD artifact SHA256s:
+
+```text
+radxa-zero-3w .wic:    159d697d010667fdc7e7453c77affcc9318a42372f347587806a2a44a339f0af
+orangepi-zero3w .wic.gz: 1298f773e459da13cc3689dacb7c9a03ffd4809e2c4295424aa945a17b6d5d4a
+orangepi-zero3w raw WIC: 5e6940c19d90b1908cdc5bcebdea78db9008c1b14376a90c63e51963f305a57e
+```
+
+The dated increment notes below preserve earlier intermediate/failure levels;
+their pending image checks are superseded by this completed software baseline.
+
 ## Incremental validation
 
 The common layer loads its ROS packagegroup through `BBFILES_DYNAMIC` only
