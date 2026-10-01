@@ -1,0 +1,17 @@
+header:
+  version: 17
+  includes:
+    - kas/include/repos-microduck-wrynose.yml
+
+machine: qemuarm64
+distro: nodistro
+target:
+  - core-image-minimal
+
+local_conf_header:
+  caches: |
+    DL_DIR = "/work/downloads"
+    SSTATE_DIR = "/work/sstate-cache"
+    BB_HASHSERVE_DB_DIR = "${SSTATE_DIR}"
+    BB_NUMBER_THREADS = "4"
+    BB_NUMBER_PARSE_THREADS = "4"

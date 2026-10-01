@@ -1,0 +1,37 @@
+header:
+  version: 17
+
+defaults:
+  repos:
+    branch: wrynose
+
+repos:
+  openembedded-core:
+    path: repos/openembedded-core
+    url: https://github.com/openembedded/openembedded-core.git
+    commit: ef022bf82d79015802309d14c28b13373ebe53f5
+    layers:
+      meta:
+
+  bitbake:
+    path: repos/bitbake
+    url: https://github.com/openembedded/bitbake.git
+    branch: "2.18"
+    commit: 0ad6c1c34a5e07a5f8dd66ab248c1e7b37b69fa9
+    layers:
+      .: disabled
+
+  meta-openembedded:
+    path: repos/meta-openembedded
+    url: https://github.com/openembedded/meta-openembedded.git
+    commit: 14282a02be9c74a1276a7cda7d6c89e054699a11
+    layers:
+      meta-filesystems:
+      meta-networking:
+      meta-oe:
+      meta-python:
+
+  meta-saha:
+    path: /work/meta-saha
+    layers:
+      saha-layers/meta-saha-common:

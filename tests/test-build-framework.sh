@@ -578,7 +578,12 @@ grep -q 'Build saha-image-robot' "$ROOT_DIR/scripts/saha-build" ||
 grep -q 'packagegroup-saha-ros2' "$ROOT_DIR/saha-layers/meta-tegra-saha/recipes-saha/images/saha-image-robot.bb" ||
   fail "saha-image-robot must install the Saha ROS 2 packagegroup"
 
-ROS2_PACKAGEGROUP="$COMMON_LAYER/recipes-saha/packagegroups/packagegroup-saha-ros2.bb"
+ROS2_PACKAGEGROUP="$COMMON_LAYER/dynamic-layers/ros2/recipes-saha/packagegroups/packagegroup-saha-ros2.bb"
+grep -q '^BBFILES_DYNAMIC.*ros2-layer:' "$COMMON_LAYER/conf/layer.conf" ||
+  fail "common ROS packagegroup must load only with the ROS provider layer"
+if sed -n '/^LAYERDEPENDS_saha-common/,/^"/p' "$COMMON_LAYER/conf/layer.conf" | grep -q 'ros'; then
+  fail "common tools must load without a ROS layer dependency"
+fi
 [ -f "$ROS2_PACKAGEGROUP" ] ||
   fail "Saha ROS 2 packagegroup must exist"
 grep -q 'ros-base' "$ROS2_PACKAGEGROUP" ||
