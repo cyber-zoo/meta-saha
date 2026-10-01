@@ -15,4 +15,4 @@ repos:
 local_conf_header:
   a733-boot: |
     IMAGE_FSTYPES += "wic.gz wic.bmap"
-    LICENSE_FLAGS_ACCEPTED += "allwinner-boot-tools allwinner-bootfirmware"
+    LICENSE_FLAGS_ACCEPTED += "allwinner-boot-tools allwinner-bootfirmware allwinner-radio-firmware"

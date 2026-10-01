@@ -48,7 +48,28 @@ binding; shared mixer initialization waits for sound card `aic3104`.
 The vendor kernel already contains the AIC SDIO driver. Do not install Radxa's
 out-of-tree module on this machine. GPU/NPU/camera performance and radio/gamepad
 operation remain hardware gates. Media starts on the test source until a camera
-path is qualified. Generic actuation is disabled pending commissioning.
+path is qualified. Policy-driven gait is disabled pending commissioning;
+the upstream startup-pose behavior can still apply motor torque.
+
+## Radio firmware and UART
+
+Use `meta-allwinner` revision `e93131a` or later for the eight pinned AIC8800D80
+firmware files. Saha accepts the BSP's `allwinner-radio-firmware` flag and
+recommends its machine firmware; these files use the in-tree driver's
+`/usr/lib/firmware/aic8800d80` path. The board package requires the shared
+`microduck-bluetooth-uart` service, and the kernel fragment/modules list enable
+the H4 UART transport on `ttyS1`. No Radxa module is used on A733.
+
+2026-10-02: the Saha plus private U-Boot graph parsed 6,198 recipes with zero
+errors; actual board-package installation passed all 685 tasks. BitBake
+introspection confirmed the UART-helper runtime dependency and accepted radio
+flag. Five Bluetooth helper tests and framework/flash regressions passed.
+The BSP's firmware package already passed actual build/package QA. Full Saha
+rootfs installation, HCI operation and physical radio behavior remain separate
+checks.
+
+Rollback: revert this Saha radio consumer before removing the BSP firmware or
+shared UART service. Kernel/boot source revisions do not change.
 
 ## Evidence and rollback
 
