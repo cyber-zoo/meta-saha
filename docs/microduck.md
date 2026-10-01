@@ -75,6 +75,21 @@ without a qualified camera/NPU/MPP stack. OpenGL and PulseAudio backfill is
 explicitly disabled in this headless distro; GST optional GUI plugins are
 excluded. The accepted commercial flags are scoped to x264 and its GST plugin.
 
+WebRTC also requires the
+[debugutilsbad `errorignore` element](https://gstreamer.freedesktop.org/documentation/debugutilsbad/errorignore.html)
+to discover encoder caps. The plugin recipe declares this runtime dependency
+explicitly. Without it, `mediad` can keep serving HTTP while its WebRTC pipeline
+reports that no codec can handle the stream. A live process/HTTP response alone
+is insufficient validation.
+
+2026-10-02: the initial ARM64 run exposed this missing element in the actual
+media log. A negative probe against that rootfs returned `No such element or
+plugin 'errorignore'`. The corrected frozen graph completed all 5,183 build
+tasks and rootfs inspection passed with 1,249 packages. Actual plugin probing,
+finite video/audio pipelines, all ten ONNX model warmups and `mediad` startup
+then passed in isolated ARM64 execution, with no codec-discovery/pipeline
+errors. Revert this dependency correction to restore the recorded media failure.
+
 Generic commissioning starts with `policy.enabled=false`, a 50 Hz loop and
 ordinary Sync Read. Fit/commission the bus and IMU, validate HOME and mounting,
 then change the policy setting before requesting motion. Board-specific 5 V

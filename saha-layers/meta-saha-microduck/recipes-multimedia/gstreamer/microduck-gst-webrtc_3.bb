@@ -17,6 +17,8 @@ COMPATIBLE_HOST = "aarch64.*-linux"
 PACKAGE_ARCH = "${TUNE_PKGARCH}"
 DEPENDS = "glib-2.0 gstreamer1.0 gstreamer1.0-plugins-base gstreamer1.0-plugins-bad"
 RDEPENDS:${PN} = "libnice gstreamer1.0-plugins-bad-webrtc gstreamer1.0-plugins-bad-dtls gstreamer1.0-plugins-bad-srtp"
+# webrtcsink uses errorignore while discovering encoder output caps.
+RDEPENDS:${PN} += "gstreamer1.0-plugins-bad-debugutilsbad"
 INSANE_SKIP:${PN} = "already-stripped"
 
 do_install() {

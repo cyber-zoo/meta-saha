@@ -55,7 +55,7 @@ def inspect(root, manifest, machine, metadata):
     packages = {line.split()[0] for line in manifest.read_text().splitlines() if line.strip()}
     required = {"microduck-runtime", "microduck-policies", "onnxruntime-bin",
                 "microduck-gst-webrtc", "microduck-audio", "microduck-bluetooth-uart",
-                "networkmanager", "bluez5"}
+                "networkmanager", "bluez5", "gstreamer1.0-plugins-bad-debugutilsbad"}
     board = "radxa" if machine == "radxa-zero-3w" else "orangepi"
     required.add(f"saha-{board}-microduck")
     required.update({"radxa-aic8800-firmware", "radxa-ap6256-firmware"}
@@ -82,7 +82,8 @@ def inspect(root, manifest, machine, metadata):
                 libraries.setdefault(name, Path(directory) / name)
     elf_paths = [f"/opt/robot/daemon/current/bin/{name}" for name in version["binaries"]]
     elf_paths += ["/usr/lib/libonnxruntime.so.1", "/usr/lib/libonnxruntime_providers_shared.so",
-                  "/usr/lib/gstreamer-1.0/libgstrswebrtc.so", "/usr/lib/gstreamer-1.0/libgstrsrtp.so"]
+                  "/usr/lib/gstreamer-1.0/libgstrswebrtc.so", "/usr/lib/gstreamer-1.0/libgstrsrtp.so",
+                  "/usr/lib/gstreamer-1.0/libgstdebugutilsbad.so"]
     dependencies = {}
     for name in elf_paths:
         binary = path(name)
