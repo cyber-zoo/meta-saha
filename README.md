@@ -21,6 +21,7 @@ bitbake, vcstool, or Yocto build packages installed.
 | `rdk-x5` | `rdk-x5` | [D-Robotics RDK X5](docs/hardware/rdk-x5.md) | Pinned Wrynose; RDKOS 3.5.0 / SDK 1.1.1; Linux 6.1.83 |
 | `iq-9075-evk` | `iq-9075-evk` | [Qualcomm Dragonwing IQ-9075 EVK](docs/hardware/iq9075.md) | Pinned Wrynose / Qualcomm meta-qcom; ROS 2 Jazzy |
 | `radxa-zero-3w` | `radxa-zero-3w` | [Radxa ZERO 3W](docs/hardware/radxa-zero-3w.md) | Pinned Wrynose / upstream meta-rockchip; ROS-free Microduck integration in progress |
+| `orangepi-zero3w` | `orangepi-zero3w` | [Orange Pi Zero 3W](docs/hardware/orangepi-zero3w.md) | Pinned Wrynose / standalone meta-allwinner; ROS-free Microduck integration in progress |
 
 List targets with:
 

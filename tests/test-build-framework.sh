@@ -26,6 +26,8 @@ contains "$targets_output" "D-Robotics RDK X5"
 contains "$targets_output" "iq-9075-evk"
 contains "$targets_output" "Qualcomm Dragonwing IQ-9075"
 contains "$targets_output" "radxa-zero-3w"
+contains "$targets_output" "orangepi-zero3w"
+contains "$targets_output" "Allwinner A733"
 if [[ "$targets_output" == *"ros"* ]] || [[ "$targets_output" == *"ROS"* ]]; then
   fail "supported target list must not include ROS targets"
 fi
@@ -78,6 +80,36 @@ for option in SAHA_ROS_DISTRO=jazzy SAHA_HOMEASSISTANT=1 SAHA_HOMEASSISTANT=mayb
 done
 explicit_radxa_output="$(SAHA_DRY_RUN=1 SAHA_ROS_DISTRO=none SAHA_HOMEASSISTANT=off "$ROOT_DIR/scripts/saha-build" radxa-zero-3w)"
 contains "$explicit_radxa_output" "kas build kas/targets/radxa-zero-3w.yml"
+
+bsp_workspace="$(mktemp -d)"
+mkdir -p "$bsp_workspace/meta-saha" "$bsp_workspace/meta-allwinner/conf"
+printf 'BBFILE_COLLECTIONS += "allwinner"\n' > "$bsp_workspace/meta-allwinner/conf/layer.conf"
+default_bsp="$(
+  unset SAHA_META_ALLWINNER_DIR
+  . "$ROOT_DIR/scripts/saha-lib"
+  saha_meta_allwinner_dir "$bsp_workspace/meta-saha"
+)"
+[[ "$default_bsp" = "$bsp_workspace/meta-allwinner" ]] || fail "Allwinner BSP must default to the sibling checkout"
+mv "$bsp_workspace/meta-allwinner" "$bsp_workspace/board bsp"
+opi_output="$(SAHA_DRY_RUN=1 SAHA_META_ALLWINNER_DIR="$bsp_workspace/board bsp" "$ROOT_DIR/scripts/saha-build" orangepi-zero3w)"
+contains "$opi_output" "kas build kas/targets/orangepi-zero3w.yml"
+contains "$opi_output" "board\\ bsp:/work/meta-allwinner:ro"
+contains "$opi_output" "/build/orangepi-zero3w:/work/build/orangepi-zero3w"
+if [[ "$opi_output" == *"ros-distro"* ]] || [[ "$opi_output" == *"homeassistant-container"* ]]; then
+  fail "Orange Pi must select the ROS-free Microduck graph"
+fi
+for option in SAHA_ROS_DISTRO=jazzy SAHA_HOMEASSISTANT=1 SAHA_X5_ACCELERATORS=1; do
+  if env SAHA_DRY_RUN=1 SAHA_META_ALLWINNER_DIR="$bsp_workspace/board bsp" "$option" "$ROOT_DIR/scripts/saha-build" orangepi-zero3w > "$bsp_workspace/error" 2>&1; then
+    fail "Orange Pi unexpectedly accepted $option"
+  fi
+  ! grep -q 'docker ' "$bsp_workspace/error" || fail "Orange Pi option validation must happen before Docker"
+done
+if SAHA_DRY_RUN=1 SAHA_META_ALLWINNER_DIR="$bsp_workspace/meta-saha" "$ROOT_DIR/scripts/saha-build" orangepi-zero3w > "$bsp_workspace/error" 2>&1; then
+  fail "Orange Pi accepted a path without Allwinner layer metadata"
+fi
+contains "$(cat "$bsp_workspace/error")" "must point to an Allwinner BSP layer"
+! grep -q 'docker ' "$bsp_workspace/error" || fail "Invalid BSP paths must fail before Docker"
+rm -r -- "$bsp_workspace"
 
 if SAHA_DRY_RUN=1 SAHA_ROS_DISTRO=lyrical "$ROOT_DIR/scripts/saha-build" iq-9075-evk >/tmp/saha-iq-9075-lyrical.out 2>&1; then
   fail "IQ-9075 unexpectedly accepted ROS 2 Lyrical"

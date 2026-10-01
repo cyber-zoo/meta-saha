@@ -14,6 +14,7 @@ agx-orin-devkit|jetson-agx-orin-devkit|AGX Orin devkit P3701-0000 module in P373
 rdk-x5|rdk-x5|D-Robotics RDK X5 development board
 iq-9075-evk|iq-9075-evk|Qualcomm Dragonwing IQ-9075 Evaluation Kit
 radxa-zero-3w|radxa-zero-3w|Radxa ZERO 3W RK3566 Microduck board
+orangepi-zero3w|orangepi-zero3w|Orange Pi Zero 3W Allwinner A733 Microduck board
 TARGETS
 }
 
@@ -232,11 +233,25 @@ saha_meta_d_robotics_dir() {
   (cd -- "$requested" >/dev/null 2>&1 && pwd -P)
 }
 
+saha_meta_allwinner_dir() {
+  local root_dir=$1
+  local requested=${SAHA_META_ALLWINNER_DIR:-"$root_dir/../meta-allwinner"}
+
+  if [ ! -r "$requested/conf/layer.conf" ] ||
+     ! grep -Eq 'BBFILE_COLLECTIONS.*["[:space:]]allwinner(["[:space:]]|$)' "$requested/conf/layer.conf"; then
+    printf 'SAHA_META_ALLWINNER_DIR must point to an Allwinner BSP layer (default: %s/../meta-allwinner): %s\n' "$root_dir" "$requested" >&2
+    return 2
+  fi
+  (cd -- "$requested" >/dev/null 2>&1 && pwd -P)
+}
+
 saha_validate_target_inputs() {
   local target=$1
 
   if [ "$target" = "rdk-x5" ]; then
     saha_meta_d_robotics_dir >/dev/null
+  elif [ "$target" = "orangepi-zero3w" ]; then
+    saha_meta_allwinner_dir "$(saha_repo_root)" >/dev/null
   fi
 }
 
@@ -425,7 +440,7 @@ saha_docker_args() {
   local root_dir=$1
   local target=$2
   local interactive=$3
-  local build_dir container_build_dir downloads_dir sstate_dir image meta_d_robotics_dir
+  local build_dir container_build_dir downloads_dir sstate_dir image meta_d_robotics_dir meta_allwinner_dir
   build_dir="$(saha_build_dir "$root_dir" "$target")" || return $?
   container_build_dir="$(saha_container_build_dir "$target")" || return $?
   downloads_dir="$(saha_downloads_dir "$root_dir")"
@@ -434,6 +449,8 @@ saha_docker_args() {
 
   if [ "$target" = "rdk-x5" ]; then
     meta_d_robotics_dir="$(saha_meta_d_robotics_dir)" || return $?
+  elif [ "$target" = "orangepi-zero3w" ]; then
+    meta_allwinner_dir="$(saha_meta_allwinner_dir "$root_dir")" || return $?
   fi
 
   mkdir -p "$build_dir" "$downloads_dir" "$sstate_dir"
@@ -487,6 +504,8 @@ saha_docker_args() {
 
   if [ "$target" = "rdk-x5" ]; then
     printf '%s\n' "-v" "$meta_d_robotics_dir:/work/meta-d-robotics:ro"
+  elif [ "$target" = "orangepi-zero3w" ]; then
+    printf '%s\n' "-v" "$meta_allwinner_dir:/work/meta-allwinner:ro"
   fi
 
   printf '%s\n' \

@@ -1,0 +1,18 @@
+header:
+  version: 17
+  includes:
+    - kas/include/microduck-base.yml
+
+machine: orangepi-zero3w
+
+repos:
+  meta-allwinner:
+    path: /work/meta-allwinner
+  meta-saha:
+    layers:
+      saha-layers/meta-allwinner-saha:
+
+local_conf_header:
+  a733-boot: |
+    IMAGE_FSTYPES += "wic.gz wic.bmap"
+    LICENSE_FLAGS_ACCEPTED += "allwinner-boot-tools allwinner-bootfirmware"

@@ -1,0 +1,5 @@
+KERNEL_DEVICETREE = "allwinner/sun60i-a733-orangepi-zero3w-microduck.dtb"
+SERIAL_CONSOLES = ""
+ALLWINNER_BOOT_CONSOLE = "console=tty1"
+MACHINE_FEATURES:append = " alsa bluetooth wifi"
+MACHINE_EXTRA_RRECOMMENDS += "saha-orangepi-microduck"

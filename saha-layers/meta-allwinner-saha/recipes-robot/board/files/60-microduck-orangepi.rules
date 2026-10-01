@@ -1,0 +1,2 @@
+SUBSYSTEM=="tty", KERNEL=="ttyS0", SYMLINK+="serial0", GROUP="robot", MODE="0660"
+SUBSYSTEM=="i2c-dev", KERNEL=="i2c-0", SYMLINK+="i2c-pihat", GROUP="i2c", MODE="0660"

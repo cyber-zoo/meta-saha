@@ -1,0 +1,66 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+#include "sun60i-a733-orangepi-zero3w.dts"
+
+/ {
+    model = "Orange Pi Zero 3W with Microduck HAT";
+    chosen {
+        /delete-property/ stdout-path;
+    };
+    aliases {
+        i2c0 = &twi0;
+    };
+    sound-aic3104 {
+        compatible = "allwinner,sunxi-snd-mach";
+        soundcard-mach,name = "aic3104";
+        soundcard-mach,format = "i2s";
+        soundcard-mach,slot-num = <2>;
+        soundcard-mach,slot-width = <32>;
+        soundcard-mach,bitclock-master = <&pihat_cpu>;
+        soundcard-mach,frame-master = <&pihat_cpu>;
+        status = "okay";
+        pihat_cpu: soundcard-mach,cpu {
+            sound-dai = <&i2s0_plat>;
+            soundcard-mach,mclk-fp = <12000000 12000000>;
+            soundcard-mach,mclk-fs = <1>;
+            soundcard-mach,pll-fs = <1>;
+        };
+        soundcard-mach,codec {
+            sound-dai = <&aic3104>;
+        };
+    };
+};
+
+&uart0_pins_active {
+    pins = "PB9", "PB10";
+    bias-pull-up;
+};
+
+&uart0 {
+    status = "okay";
+    clocks = <&ccu CLK_UART0>, <&ccu CLK_APB_UART>, <&ccu CLK_PLL_PERI0_480M>;
+    clock-frequency = <48000000>;
+    // The NG driver enables RX DMA from this property; AW_SERIAL_DMA belongs
+    // to the older AW_UART driver and must not replace AW_UART_NG.
+    dmas = <&dma 14>;
+    dma-names = "rx";
+};
+
+&twi0 {
+    status = "okay";
+    clock-frequency = <400000>;
+    aic3104: codec@18 {
+        compatible = "ti,tlv320aic3104";
+        reg = <0x18>;
+        #sound-dai-cells = <0>;
+        status = "okay";
+    };
+};
+
+&i2s0_plat {
+    pinctrl-0 = <&i2s0_pins_b &i2s0_pins_c &i2s0_pins_d &i2s0_pins_e>;
+    status = "okay";
+};
+
+&i2s0_mach {
+    status = "disabled";
+};
