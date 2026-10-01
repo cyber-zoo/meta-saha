@@ -56,7 +56,12 @@ excluded. The accepted commercial flags are scoped to x264 and its GST plugin.
 Generic commissioning starts with `policy.enabled=false`, a 50 Hz loop and
 ordinary Sync Read. Fit/commission the bus and IMU, validate HOME and mounting,
 then change the policy setting before requesting motion. Board-specific 5 V
-power/IMU settings belong in the board configuration, not a universal default.
+HAT builds use `policy.voltage_adapt=false`, `nominal_voltage=5.0` and disable
+the upstream 2S-battery empty-pack shutdown. A regulated motor rail is not a
+state-of-charge measurement. The upstream fall/thermal/bus guards remain
+enabled. Robot geometry/calibration requires separate commissioning. Microduck
+0.15.0 does not accept the older `[battery]` or `[body_imu]` parameter tables;
+do not transplant them from a different daemon version.
 
 Scheduled upstream OTA is disabled: Debian release hooks install packages with
 apt and have not been qualified for Yocto. The updater serves status with a
