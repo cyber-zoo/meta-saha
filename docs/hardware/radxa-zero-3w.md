@@ -45,3 +45,27 @@ checks passed. Actual kernel/image builds and hardware gates remain pending.
 
 Rollback: revert the HAT integration commit. Keep motors disconnected when
 using the earlier image with its stock UART2 console.
+
+## Radio variants
+
+The graph includes both SDIO variants. AIC uses Radxa's GPL-2.0 module source
+at `d13d07963cd15d731e2895e8288a04cca6152ac9`, applying its pinned Debian
+compatibility patches to SDIO only, plus the matching D80 firmware directory.
+AP6256 uses mainline `brcmfmac` and the three checksum-pinned AP6256 files from
+`radxa/rkwifibt` at `b61a1e8499a4f1956ef417cbcfaa6c2cf805ce08`; the driver maps
+its C5 revision to `brcmfmac43456-sdio`. Firmware is conservatively declared
+`CLOSED` and the target explicitly accepts `radxa-radio-firmware`.
+
+The DT powers Bluetooth and holds its device wake GPIO high for the userspace
+UART transport. The shared helper detects the bound SDIO vendor and initializes
+UART1 (`ttyS1`) with AIC H4 or Broadcom HCD. The H4 module loads before BlueZ.
+This keeps both board variants in one image without a downstream Rockchip fork.
+
+2026-10-02: pinned graph parse (3,181 recipes, zero errors), actual AIC
+fetch/unpack/SDIO patch execution (104 tasks), and actual installation of both
+firmware recipes passed. The new DT compiled cleanly with enable/wake GPIOs
+17/12 asserted high. Five Bluetooth mock tests and the framework/audio/flash
+regressions passed. Actual kernel-module compilation, full package/rootfs QA
+and physical radio behavior remain gates for the full image run.
+
+Rollback: revert this radio increment before removing the shared UART helper.

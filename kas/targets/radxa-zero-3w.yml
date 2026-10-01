@@ -24,3 +24,7 @@ repos:
   meta-saha:
     layers:
       saha-layers/meta-rockchip-saha:
+
+local_conf_header:
+  radxa-radio: |
+    LICENSE_FLAGS_ACCEPTED += "radxa-radio-firmware"

@@ -5,6 +5,7 @@ SRC_URI = "file://60-microduck-radxa.rules file://microduck-modules.conf"
 S = "${UNPACKDIR}"
 COMPATIBLE_MACHINE = "^radxa-zero-3w$"
 PACKAGE_ARCH = "${MACHINE_ARCH}"
+RDEPENDS:${PN} = "microduck-bluetooth-uart"
 
 do_install() {
     install -d ${D}${sysconfdir}/udev/rules.d ${D}${sysconfdir}/modules-load.d
