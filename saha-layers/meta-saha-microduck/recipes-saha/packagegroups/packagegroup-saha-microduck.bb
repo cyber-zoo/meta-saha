@@ -4,6 +4,7 @@ inherit packagegroup
 
 RDEPENDS:${PN} = " \
     microduck-runtime \
+    microduck-audio \
     alsa-utils \
     avahi-daemon \
     bluez5 \

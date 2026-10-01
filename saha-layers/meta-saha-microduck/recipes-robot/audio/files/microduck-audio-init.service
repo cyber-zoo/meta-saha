@@ -1,0 +1,12 @@
+[Unit]
+Description=Microduck AIC3104 speaker mixer
+After=systemd-modules-load.service
+Before=robotd.service
+
+[Service]
+Type=oneshot
+ExecStart=@LIBEXECDIR@/microduck/microduck-audio-init
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,51 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+#include "rk3566-radxa-zero-3w.dts"
+
+/ {
+    model = "Radxa ZERO 3W with Microduck HAT";
+    chosen {
+        /delete-property/ stdout-path;
+    };
+    aliases {
+        i2c3 = &i2c3;
+    };
+    aic3104_mclk: aic3104-mclk {
+        compatible = "fixed-clock";
+        #clock-cells = <0>;
+        clock-frequency = <12000000>;
+    };
+    sound-aic3104 {
+        compatible = "simple-audio-card";
+        simple-audio-card,name = "aic3104";
+        simple-audio-card,format = "i2s";
+        simple-audio-card,bitclock-master = <&pihat_cpu>;
+        simple-audio-card,frame-master = <&pihat_cpu>;
+        pihat_cpu: simple-audio-card,cpu {
+            sound-dai = <&i2s3_2ch>;
+            system-clock-frequency = <12288000>;
+        };
+        simple-audio-card,codec {
+            sound-dai = <&aic3104>;
+        };
+    };
+};
+
+&i2c3 {
+    status = "okay";
+    clock-frequency = <400000>;
+    pinctrl-names = "default";
+    pinctrl-0 = <&i2c3m0_xfer>;
+    aic3104: codec@18 {
+        compatible = "ti,tlv320aic3104";
+        reg = <0x18>;
+        #sound-dai-cells = <0>;
+        clocks = <&aic3104_mclk>;
+        clock-names = "mclk";
+    };
+};
+
+&i2s3_2ch {
+    pinctrl-names = "default";
+    pinctrl-0 = <&i2s3m0_sclk &i2s3m0_lrck &i2s3m0_sdi &i2s3m0_sdo>;
+    status = "okay";
+};

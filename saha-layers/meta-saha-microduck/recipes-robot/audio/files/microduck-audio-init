@@ -1,0 +1,17 @@
+#!/bin/sh
+set -eu
+
+attempt=0
+until amixer -c aic3104 info >/dev/null 2>&1; do
+    attempt=$((attempt + 1))
+    if [ "$attempt" -ge 15 ]; then
+        echo 'Microduck AIC3104 card did not appear' >&2
+        exit 1
+    fi
+    sleep 1
+done
+
+amixer -c aic3104 cset name='PCM Playback Volume' 127,127 >/dev/null
+amixer -c aic3104 cset name='Line DAC Playback Volume' 118,118 >/dev/null
+amixer -c aic3104 cset name='Line Playback Switch' on,on >/dev/null
+amixer -c aic3104 cset name='Line Playback Volume' 9,9 >/dev/null

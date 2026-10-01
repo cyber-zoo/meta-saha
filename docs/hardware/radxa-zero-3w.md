@@ -17,8 +17,15 @@ to an SD card or prove board operation.
 
 Radxa ships AP6256 and AIC8800D80 radio variants. Track their drivers/firmware
 separately; do not infer radio support from a successful image build. The
-stock UART2 console occupies the Microduck motor wires and must be removed
-by the board integration increment before connecting motors.
+Microduck integration removes the Linux UART2 console/getty and exposes
+`ttyS2` as `/dev/serial0`. Earlier boot firmware can still transmit on UART2;
+keep actuators quiescent until the board has finished booting.
+
+The Microduck DT enables header I2C3 at 400 kHz (`/dev/i2c-pihat`) and I2S3
+with the HAT's AIC3104 codec at address 0x18 and external 12 MHz clock.
+`microduck-audio-init` waits for the `aic3104` card, then sets the upstream
+speaker mixer levels before robotd starts. Card timeout or mixer failures
+are reported by systemd. This assumes the Microduck HAT wiring.
 
 Support is experimental until image, boot, bus, IMU, policy, radio, gamepad
 and audio gates in [the Microduck guide](../microduck.md) have evidence.
@@ -29,3 +36,12 @@ The empty thin board layer produced one expected warning before hardware
 recipes are added. Framework, flash safety, Bash syntax and whitespace
 checks passed. This increment does not yet package the Microduck runtime or
 claim a complete image build.
+
+2026-10-02: the HAT DT compiled against checksum-verified upstream Linux
+6.18 sources; the resulting 55,521-byte DTB reports sound card `aic3104`.
+The pinned board graph parsed 3,177 recipes with zero errors. Audio readiness,
+timeout and mixer failure tests, framework/flash regressions and whitespace
+checks passed. Actual kernel/image builds and hardware gates remain pending.
+
+Rollback: revert the HAT integration commit. Keep motors disconnected when
+using the earlier image with its stock UART2 console.
