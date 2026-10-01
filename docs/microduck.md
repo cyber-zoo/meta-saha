@@ -81,6 +81,22 @@ A successful build must be followed by rootfs, service, library and model
 checks before claiming runtime validation. Physical radio, bus timing and gait
 stability still require board evidence.
 
+## Radio UART transport
+
+`microduck-bluetooth-uart` supplies the shared foreground systemd service for
+boards that reserve `/dev/ttyS1` for Bluetooth. It waits up to 15 seconds for
+a supported SDIO driver to bind. AIC8800D80 uses H4 at its firmware's 1.5 Mbaud;
+AP6256 uses BlueZ's `bcm43xx` HCD initialization from 115200 baud, then switches
+to 1.5 Mbaud. Unknown/unbound devices fail without opening any UART. An attach
+failure reaches systemd's restart policy. Board packages select this helper;
+the motor UART remains independently mapped to `/dev/serial0`.
+
+2026-10-02: five mocked transport tests passed (AIC delayed binding, Broadcom,
+unknown device, bounded readiness and attach failure). The pinned Radxa graph
+including the package parsed 3,181 recipes with zero errors; framework/audio/
+flash regressions and the shell syntax check passed. Real controller behavior
+remains a hardware gate.
+
 2026-10-01 runtime metadata milestone: image task dry-run passed 8,066 tasks.
 After narrowing headless media/default features, the final graph parsed with
 zero errors and resolved 297 recipes, containing no ROS, Docker, Rust compiler,

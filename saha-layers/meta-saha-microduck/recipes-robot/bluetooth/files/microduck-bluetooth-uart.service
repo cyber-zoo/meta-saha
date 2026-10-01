@@ -1,0 +1,19 @@
+[Unit]
+Description=Microduck radio UART transport
+Requires=dev-ttyS1.device
+After=dev-ttyS1.device systemd-modules-load.service
+Before=bluetooth.service
+
+[Service]
+Type=simple
+ExecStart=@LIBEXECDIR@/microduck/microduck-bluetooth-uart
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+RestrictSUIDSGID=yes
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,25 @@
+#!/bin/sh
+set -eu
+
+# Both board layouts reserve ttyS1 for the radio; serial0 is the motor bus.
+# AIC's SDIO driver loads BT firmware at 1.5 Mbaud. AP6256 needs Broadcom's
+# HCD initialization from 115200 baud. Wait for a bound SDIO driver first.
+radio_root=${MICRODUCK_SDIO_SYSFS:-/sys/bus/sdio/devices}
+attempt=0
+while [ "$attempt" -lt 15 ]; do
+    for radio in "$radio_root"/*; do
+        [ -r "$radio/vendor" ] && [ -e "$radio/driver" ] || continue
+        case "$(cat "$radio/vendor")" in
+            0xc8a1|0xC8A1)
+                exec hciattach -n -s 1500000 /dev/ttyS1 any 1500000 flow
+                ;;
+            0x02d0|0x02D0)
+                exec hciattach -n -s 115200 /dev/ttyS1 bcm43xx 1500000 flow
+                ;;
+        esac
+    done
+    attempt=$((attempt + 1))
+    sleep 1
+done
+echo 'Microduck: supported SDIO radio driver did not bind within 15 seconds' >&2
+exit 1
