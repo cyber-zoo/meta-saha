@@ -44,6 +44,21 @@ QA remains enabled. The release source/license is fetched alongside its
 binaries. This build packages the published runtime; it does not compile Rust
 daemon sources.
 
+Source/license inputs use Git revisions, not GitHub-generated source archives:
+the daemon revision above and GST v3 source
+`a9a839f274fb20698d3abc2639a28d75421c5471`. Wrynose's `src-uri-bad` check stays
+enabled. Published binary archives retain their original SHA256 checks. The
+plugin source's Apache license has a leading newline; its exact Git bytes are
+audited independently of the daemon's license, without changing license terms.
+
+2026-10-02: Docker checks in the Orange Pi graph passed recipe QA (two tasks),
+actual fetch/unpack (26 tasks) and license QA (120 tasks) for both packages.
+The initial full Radxa run exposed the source-archive check; the first Git
+rerun caught the distinct plugin license bytes. Both failures and the final
+passing rerun are retained in the task logs. Full install/package/image QA
+remains part of the image build. Revert the source-fetch correction to inspect
+the previous archive metadata; that restores the recorded Wrynose rejection.
+
 The enabled units are `robotd`, `configd`, `btd`, `padd`, `mediad` and `updaterd`.
 They retain upstream account/sandbox boundaries. `tofd` is installed and may
 be enabled when its optional sensor is fitted. BlueZ D-Bus access belongs to

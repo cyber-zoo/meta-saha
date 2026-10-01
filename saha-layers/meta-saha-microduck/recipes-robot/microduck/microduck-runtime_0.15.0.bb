@@ -2,11 +2,13 @@ SUMMARY = "Official stable Microduck ARM64 daemons"
 HOMEPAGE = "https://github.com/pollen-robotics/microduck"
 LICENSE = "Apache-2.0"
 MICRODUCK_SRCREV = "a9ec4b2079ef8ee7904014089c885bb07d57d63c"
-LIC_FILES_CHKSUM = "file://microduck-${MICRODUCK_SRCREV}/LICENSE;md5=86d3f3a95c324c9479bd8986968f4327"
+LIC_FILES_CHKSUM = "file://microduck-source/LICENSE;md5=86d3f3a95c324c9479bd8986968f4327"
+SRCREV_source = "${MICRODUCK_SRCREV}"
+SRCREV_FORMAT = "source"
 
 SRC_URI = " \
     https://github.com/pollen-robotics/microduck/releases/download/daemon-v${PV}/daemon-${PV}.tar.zst;name=runtime \
-    https://codeload.github.com/pollen-robotics/microduck/tar.gz/${MICRODUCK_SRCREV};name=source;downloadfilename=microduck-source-${MICRODUCK_SRCREV}.tar.gz \
+    git://github.com/pollen-robotics/microduck.git;protocol=https;nobranch=1;name=source;destsuffix=microduck-source \
     file://robotd.toml \
     file://updater.toml \
     file://50-microduck-btd.conf \
@@ -14,7 +16,6 @@ SRC_URI = " \
     file://microduck-journal.conf \
 "
 SRC_URI[runtime.sha256sum] = "9f18714c8a90b1c6e9e3d50c4d839ae11990b79ffd746e354809c828137ce517"
-SRC_URI[source.sha256sum] = "93087a45019552cc4bba07110a6c44c018723735889432bb206f9ba22e927704"
 S = "${UNPACKDIR}"
 
 inherit bin_package systemd useradd
@@ -48,7 +49,7 @@ do_install() {
     install -m 0644 ${UNPACKDIR}/robotd.toml ${D}${sysconfdir}/robot/robotd.toml
     install -m 0644 ${UNPACKDIR}/updater.toml ${D}${sysconfdir}/robot/updater.toml
     install -d ${D}${sysconfdir}/robot/trusted_keys
-    install -m 0644 ${S}/microduck-${MICRODUCK_SRCREV}/deploy/trusted_keys/release-*.pub ${D}${sysconfdir}/robot/trusted_keys/
+    install -m 0644 ${S}/microduck-source/deploy/trusted_keys/release-*.pub ${D}${sysconfdir}/robot/trusted_keys/
 
     install -d ${D}${systemd_system_unitdir}
     for unit in robotd configd btd padd mediad updaterd tofd; do
