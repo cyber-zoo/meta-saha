@@ -1,7 +1,8 @@
 SUMMARY = "Official stable Microduck ARM64 daemons"
 HOMEPAGE = "https://github.com/pollen-robotics/microduck"
 LICENSE = "Apache-2.0"
-MICRODUCK_SRCREV = "a9ec4b2079ef8ee7904014089c885bb07d57d63c"
+MICRODUCK_SRCREV = "1fa84386f07884e27866411bc1ba166977bced95"
+MICRODUCK_ARCHIVE_SHA256 = "b1a10b6c2bd99e4de42774818cf94d6d1ca5a9f875e82698d68d8d5ae287eb2c"
 LIC_FILES_CHKSUM = "file://microduck-source/LICENSE;md5=86d3f3a95c324c9479bd8986968f4327"
 SRCREV_source = "${MICRODUCK_SRCREV}"
 SRCREV_FORMAT = "source"
@@ -16,7 +17,7 @@ SRC_URI = " \
     file://microduck-journal.conf \
     file://20-saha-offline.conf \
 "
-SRC_URI[runtime.sha256sum] = "9f18714c8a90b1c6e9e3d50c4d839ae11990b79ffd746e354809c828137ce517"
+SRC_URI[runtime.sha256sum] = "${MICRODUCK_ARCHIVE_SHA256}"
 S = "${UNPACKDIR}"
 
 inherit bin_package systemd useradd
@@ -73,7 +74,7 @@ EOF
     cat > ${D}${datadir}/saha/microduck/runtime-source <<EOF
 version=${PV}
 revision=${MICRODUCK_SRCREV}
-archive_sha256=9f18714c8a90b1c6e9e3d50c4d839ae11990b79ffd746e354809c828137ce517
+archive_sha256=${MICRODUCK_ARCHIVE_SHA256}
 EOF
 }
 

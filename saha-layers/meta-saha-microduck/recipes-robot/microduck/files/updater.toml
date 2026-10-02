@@ -12,6 +12,12 @@ allow_users = []
 [component.daemon]
 install_dir = "/opt/robot/daemon"
 keep_previous = 1
+# Cover tools without systemd units if a Saha-qualified update is introduced.
+required_files = [
+    "bin/updaterd", "bin/robotctl", "bin/robotd", "bin/configd", "bin/btd",
+    "bin/padd", "bin/mediad", "bin/sounds", "bin/pet-detect", "bin/pet-features",
+    "bin/tofd",
+]
 [component.daemon.source]
 type = "github_releases"
 repo = "pollen-robotics/microduck"

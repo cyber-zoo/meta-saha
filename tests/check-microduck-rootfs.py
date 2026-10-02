@@ -129,6 +129,9 @@ def inspect(root, manifest, machine, metadata):
             "scheduled Debian OTA enabled")
     require(updater["component"]["daemon"]["source"]["tag_prefix"] == "saha-daemon-v",
             "unqualified Debian feed selected")
+    require(set(updater["component"]["daemon"]["required_files"])
+            == {f"bin/{name}" for name in version["binaries"]},
+            "updater required files do not cover the release binaries")
 
     passwd = {line.split(":")[0] for line in read("/etc/passwd").splitlines()}
     groups = {line.split(":")[0] for line in read("/etc/group").splitlines()}
