@@ -1,14 +1,13 @@
 SUMMARY = "Official stable Microduck ARM64 daemons"
 HOMEPAGE = "https://github.com/pollen-robotics/microduck"
 LICENSE = "Apache-2.0"
-MICRODUCK_SRCREV = "1fa84386f07884e27866411bc1ba166977bced95"
-MICRODUCK_ARCHIVE_SHA256 = "b1a10b6c2bd99e4de42774818cf94d6d1ca5a9f875e82698d68d8d5ae287eb2c"
+PV = "${MICRODUCK_VERSION}"
 LIC_FILES_CHKSUM = "file://microduck-source/LICENSE;md5=86d3f3a95c324c9479bd8986968f4327"
 SRCREV_source = "${MICRODUCK_SRCREV}"
 SRCREV_FORMAT = "source"
 
 SRC_URI = " \
-    https://github.com/pollen-robotics/microduck/releases/download/daemon-v${PV}/daemon-${PV}.tar.zst;name=runtime \
+    https://github.com/pollen-robotics/microduck/releases/download/${MICRODUCK_TAG}/daemon-${PV}.tar.zst;name=runtime \
     git://github.com/pollen-robotics/microduck.git;protocol=https;nobranch=1;name=source;destsuffix=microduck-source \
     file://robotd.toml \
     file://updater.toml \
@@ -40,6 +39,22 @@ USERADD_PARAM:${PN} = " \
 
 SYSTEMD_SERVICE:${PN} = "robotd.service configd.service btd.service padd.service mediad.service updaterd.service"
 SYSTEMD_AUTO_ENABLE:${PN} = "enable"
+
+python do_validate_release() {
+    import tomllib
+
+    with open(d.expand("${S}/version.toml"), "rb") as stream:
+        release = tomllib.load(stream)
+    if (release.get("channel") != "daemon" or
+            release.get("version") != d.getVar("MICRODUCK_VERSION") or
+            release.get("revision") != d.getVar("MICRODUCK_SRCREV")):
+        bb.fatal("Microduck release archive version/revision disagrees with the build lock")
+    expected = {"btd", "configd", "mediad", "padd", "pet-detect", "pet-features",
+                "robotctl", "robotd", "sounds", "tofd", "updaterd"}
+    if set(release.get("binaries", [])) != expected:
+        bb.fatal("Microduck release binary set changed; review updater.toml and service contract")
+}
+addtask validate_release after do_unpack before do_install
 
 do_install() {
     release=${D}/opt/robot/daemon/releases/${PV}

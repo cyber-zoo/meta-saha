@@ -45,7 +45,30 @@ def require(condition, message):
         raise ValueError(message)
 
 
-def inspect(root, manifest, machine, metadata):
+def verify_runtime_identity(root, lock_path):
+    lock = json.loads(lock_path.read_text())
+    expected_version = lock["version"]
+    expected_revision = lock["source_revision"]
+    expected_archive_sha = lock["archive_sha256"]
+    require(lock["tag"] == f"daemon-v{expected_version}" and
+            re.fullmatch(r"\d+\.\d+\.\d+", expected_version) and
+            re.fullmatch(r"[0-9a-f]{40}", expected_revision) and
+            re.fullmatch(r"[0-9a-f]{64}", expected_archive_sha),
+            "invalid Microduck release lock")
+    version = tomllib.loads(image_path(root, "/opt/robot/daemon/current/version.toml").read_text())
+    require(version["version"] == expected_version and version["revision"] == expected_revision,
+            "runtime release/source mismatch")
+    source_lines = image_path(root, "/usr/share/saha/microduck/runtime-source").read_text().splitlines()
+    require(all("=" in line for line in source_lines), "invalid runtime provenance")
+    source = dict(line.split("=", 1) for line in source_lines)
+    require(source == {"version": expected_version, "revision": expected_revision,
+                       "archive_sha256": expected_archive_sha}, "runtime provenance differs from build lock")
+    require(os.readlink(root / "opt/robot/daemon/current") == f"releases/{expected_version}",
+            "daemon release link")
+    return version, expected_revision, expected_archive_sha
+
+
+def inspect(root, manifest, machine, metadata, release_lock):
     def path(name):
         return image_path(root, name)
 
@@ -66,20 +89,7 @@ def inspect(root, manifest, machine, metadata):
     require(not any(forbidden.match(name) for name in packages), "ROS/container package in image")
     require(not path("/opt/ros").exists() and not path("/usr/bin/ros2").exists(), "ROS files in image")
 
-    runtime_recipes = list((metadata / "saha-layers/meta-saha-microduck/recipes-robot/microduck").glob(
-        "microduck-runtime_*.bb"))
-    require(len(runtime_recipes) == 1, "expected one pinned Microduck runtime recipe")
-    runtime_recipe = runtime_recipes[0]
-    expected_version = runtime_recipe.stem.removeprefix("microduck-runtime_")
-    require(re.fullmatch(r"\d+\.\d+\.\d+", expected_version), "invalid Microduck runtime recipe version")
-    revision_match = re.search(r'MICRODUCK_SRCREV = "([0-9a-f]{40})"', runtime_recipe.read_text())
-    require(revision_match is not None, "Microduck source revision missing")
-    expected_revision = revision_match.group(1)
-    version = tomllib.loads(read("/opt/robot/daemon/current/version.toml"))
-    require(version["version"] == expected_version and version["revision"] == expected_revision,
-            "runtime release/source mismatch")
-    require(os.readlink(root / "opt/robot/daemon/current") == f"releases/{expected_version}",
-            "daemon release link")
+    version, expected_revision, expected_archive_sha = verify_runtime_identity(root, release_lock)
     require(os.readlink(root / "opt/robot/policies/current") == "releases/seed-v5", "policy release link")
     require(path("/usr/bin/robotctl") == path("/opt/robot/daemon/current/bin/robotctl"), "robotctl link")
 
@@ -165,6 +175,7 @@ def inspect(root, manifest, machine, metadata):
             == gst_revision, "GST source provenance")
 
     return {"machine": machine, "runtime": version["version"], "revision": expected_revision,
+            "archive_sha256": expected_archive_sha,
             "packages": len(packages), "policy_models": len(hashes) - 1,
             "enabled_units": list(enabled), "elf_dependencies": dependencies,
             "scope": "rootfs inspection; no target execution or hardware proof"}
@@ -176,9 +187,12 @@ def main():
     parser.add_argument("--manifest", type=Path, required=True)
     parser.add_argument("--machine", choices=("radxa-zero-3w", "orangepi-zero3w"), required=True)
     parser.add_argument("--metadata", type=Path, default=Path(__file__).resolve().parents[1])
+    parser.add_argument("--release-lock", type=Path,
+                        help="build/conf/microduck-release.lock.json (default: build/<machine>/conf)")
     args = parser.parse_args()
     try:
-        report = inspect(args.rootfs.resolve(strict=True), args.manifest, args.machine, args.metadata)
+        lock = args.release_lock or args.metadata / "build" / args.machine / "conf/microduck-release.lock.json"
+        report = inspect(args.rootfs.resolve(strict=True), args.manifest, args.machine, args.metadata, lock)
     except (OSError, ValueError, KeyError, subprocess.CalledProcessError) as error:
         parser.exit(1, f"FAIL: {error}\n")
     print(json.dumps(report, indent=2))

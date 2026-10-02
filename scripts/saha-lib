@@ -290,6 +290,41 @@ saha_build_dir() {
   printf '%s\n' "$root_dir/build/$target-ros-$ros_distro"
 }
 
+saha_prepare_microduck_release() {
+  local root_dir=$1
+  local target=$2
+  local prefer_existing=${3:-0}
+  saha_is_microduck_target "$target" || return 0
+
+  local build_dir release_lock release
+  build_dir="$(saha_build_dir "$root_dir" "$target")" || return $?
+  release_lock=${SAHA_MICRODUCK_RELEASE_LOCK:-}
+  release=${SAHA_MICRODUCK_RELEASE:-latest}
+  if [ -n "$release_lock" ] && [ -n "${SAHA_MICRODUCK_RELEASE:-}" ]; then
+    printf 'Set only one of SAHA_MICRODUCK_RELEASE and SAHA_MICRODUCK_RELEASE_LOCK\n' >&2
+    return 2
+  fi
+  if [ "$prefer_existing" = "1" ] && [ -z "$release_lock" ] &&
+     [ -z "${SAHA_MICRODUCK_RELEASE:-}" ] &&
+     [ -f "$build_dir/conf/microduck-release.lock.json" ]; then
+    release_lock="$build_dir/conf/microduck-release.lock.json"
+  fi
+
+  local resolve_cmd=(python3 "$root_dir/scripts/resolve-microduck-release.py"
+                     --output-dir "$build_dir/conf")
+  if [ -n "$release_lock" ]; then
+    resolve_cmd+=(--lock "$release_lock")
+  else
+    resolve_cmd+=(--release "$release")
+  fi
+  if [ "${SAHA_DRY_RUN:-0}" = "1" ]; then
+    printf '%q ' "${resolve_cmd[@]}"
+    printf '\n'
+    return 0
+  fi
+  "${resolve_cmd[@]}"
+}
+
 saha_container_build_dir() {
   local target=$1
   local x5_accelerators

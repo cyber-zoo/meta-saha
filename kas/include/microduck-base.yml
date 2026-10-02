@@ -19,6 +19,8 @@ repos:
       saha-layers/meta-saha-microduck:
 
 local_conf_header:
+  microduck-release: |
+    require conf/microduck-release.inc
   saha-cache: |
     DL_DIR ?= "${@os.environ.get('DL_DIR', '${TOPDIR}/downloads')}"
     SSTATE_DIR ?= "${@os.environ.get('SSTATE_DIR', '${TOPDIR}/sstate-cache')}"

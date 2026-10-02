@@ -64,6 +64,8 @@ if [[ "$qcom_dry_run_output" == *"tegra"* ]] || [[ "$qcom_dry_run_output" == *"m
 fi
 
 radxa_output="$(SAHA_DRY_RUN=1 "$ROOT_DIR/scripts/saha-build" radxa-zero-3w)"
+contains "$radxa_output" "resolve-microduck-release.py"
+contains "$radxa_output" "--release latest"
 contains "$radxa_output" "kas build kas/targets/radxa-zero-3w.yml"
 contains "$radxa_output" "/build/radxa-zero-3w:/work/build/radxa-zero-3w"
 contains "$radxa_output" "KAS_CLONE_DEPTH=1"
@@ -80,6 +82,28 @@ for option in SAHA_ROS_DISTRO=jazzy SAHA_HOMEASSISTANT=1 SAHA_HOMEASSISTANT=mayb
 done
 explicit_radxa_output="$(SAHA_DRY_RUN=1 SAHA_ROS_DISTRO=none SAHA_HOMEASSISTANT=off "$ROOT_DIR/scripts/saha-build" radxa-zero-3w)"
 contains "$explicit_radxa_output" "kas build kas/targets/radxa-zero-3w.yml"
+named_radxa_output="$(SAHA_DRY_RUN=1 SAHA_MICRODUCK_RELEASE=0.15.1 "$ROOT_DIR/scripts/saha-build" radxa-zero-3w)"
+contains "$named_radxa_output" "--release 0.15.1"
+locked_radxa_output="$(SAHA_DRY_RUN=1 SAHA_MICRODUCK_RELEASE_LOCK=/tmp/microduck-release.json "$ROOT_DIR/scripts/saha-build" radxa-zero-3w)"
+contains "$locked_radxa_output" "--lock /tmp/microduck-release.json"
+microduck_shell_dir="$(mktemp -d)"
+mkdir -p "$microduck_shell_dir/conf"
+printf '{}\n' > "$microduck_shell_dir/conf/microduck-release.lock.json"
+locked_shell_output="$(SAHA_DRY_RUN=1 SAHA_BUILD_DIR="$microduck_shell_dir" "$ROOT_DIR/scripts/saha-shell" radxa-zero-3w -c 'bitbake -p')"
+contains "$locked_shell_output" "--lock $microduck_shell_dir/conf/microduck-release.lock.json"
+python3 - "$microduck_shell_dir" <<'PY'
+from pathlib import Path
+import sys
+root = Path(sys.argv[1])
+(root / "conf/microduck-release.lock.json").unlink()
+(root / "conf").rmdir()
+root.rmdir()
+PY
+if SAHA_DRY_RUN=1 SAHA_MICRODUCK_RELEASE=0.15.1 SAHA_MICRODUCK_RELEASE_LOCK=/tmp/microduck-release.json \
+    "$ROOT_DIR/scripts/saha-build" radxa-zero-3w >/tmp/saha-microduck-invalid.out 2>&1; then
+  fail "Microduck accepted competing release selectors"
+fi
+! grep -q 'docker ' /tmp/saha-microduck-invalid.out || fail "release selector validation must fail before Docker"
 
 bsp_workspace="$(mktemp -d)"
 mkdir -p "$bsp_workspace/meta-saha" "$bsp_workspace/meta-allwinner/conf"

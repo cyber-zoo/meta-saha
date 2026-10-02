@@ -19,6 +19,9 @@ Run scripts/saha-targets to list targets.
 Radxa ZERO 3W and Orange Pi Zero 3W use the ROS-free Microduck graph.
 Orange Pi consumes ../meta-allwinner by default; override its location with
 SAHA_META_ALLWINNER_DIR. ROS and Home Assistant are disabled for both boards.
+Microduck builds select the latest stable daemon release by default. Set
+SAHA_MICRODUCK_RELEASE=0.15.1 for a named release or
+SAHA_MICRODUCK_RELEASE_LOCK=<saved-json-lock> to replay an exact release.
 USAGE
 }
 
@@ -39,6 +42,7 @@ saha_validate_target_inputs "$TARGET"
 ROOT_DIR="$(saha_repo_root)"
 saha_prepare_docker_env "$ROOT_DIR"
 saha_apply_build_tuning_defaults
+saha_prepare_microduck_release "$ROOT_DIR" "$TARGET"
 
 saha_build_builder_image "$ROOT_DIR"
 saha_run_docker "$ROOT_DIR" "$TARGET" 0 kas build "$KAS_CONFIG"
