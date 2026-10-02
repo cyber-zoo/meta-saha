@@ -107,6 +107,11 @@ the `btd` account; motor control runs as root. The `robot` group permits IPC
 access. `/etc/robot/*.toml` are configuration files preserved by package updates;
 no device-specific identity, credentials, private keys or calibration is seeded.
 
+Saha clears the upstream `updaterd` network-online ordering in a unit drop-in.
+The original unit remains intact, while local updater status and the dependent
+`mediad` startup no longer wait for NetworkManager's 60-second online timeout
+on an unprovisioned or offline board.
+
 `/opt/robot/daemon/current` selects `releases/0.15.0` and
 `/opt/robot/policies/current` selects `releases/seed-v5`. `robotctl` is on PATH.
 The runtime loads `/usr/lib/libonnxruntime.so.1` via `ORT_DYLIB_PATH`.
@@ -146,6 +151,10 @@ apt and have not been qualified for Yocto. The updater serves status with a
 distinct `saha-daemon-v` feed prefix and no non-root mutation allowlist. Do not
 apply the ordinary Debian daemon feed. Qualified Saha package/image updates
 must retain board calibration and use the recorded rollback procedure.
+The upstream `robot-boot-check` service/timer for automatic failed-update boot
+recovery is not installed; that recovery path needs a qualified Yocto updater
+before it can be enabled. Until then, restore a previous qualified image after
+an update failure.
 
 The `.tar.zst` rootfs accompanies the board SD `.wic` for inspection/emulation.
 A successful build must be followed by rootfs, service, library and model

@@ -14,6 +14,7 @@ SRC_URI = " \
     file://50-microduck-btd.conf \
     file://60-microduck-i2c.rules \
     file://microduck-journal.conf \
+    file://20-saha-offline.conf \
 "
 SRC_URI[runtime.sha256sum] = "9f18714c8a90b1c6e9e3d50c4d839ae11990b79ffd746e354809c828137ce517"
 S = "${UNPACKDIR}"
@@ -61,6 +62,8 @@ Environment=ORT_DYLIB_PATH=${libdir}/libonnxruntime.so.1
 Environment=GST_PLUGIN_PATH=${libdir}/gstreamer-1.0
 EOF
     done
+    install -m 0644 ${UNPACKDIR}/20-saha-offline.conf \
+        ${D}${systemd_system_unitdir}/updaterd.service.d/
     # ToF is fitted optionally. Its unit is shipped but not enabled by presets.
     install -d ${D}${datadir}/saha/microduck ${D}${sysconfdir}/dbus-1/system.d
     install -m 0644 ${UNPACKDIR}/50-microduck-btd.conf ${D}${sysconfdir}/dbus-1/system.d/

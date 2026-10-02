@@ -117,6 +117,7 @@ def inspect(wic, deploy, root, machine):
             require(fsck.returncode == 0, f"ext4 consistency check failed: {fsck.stdout}")
             files = ["/etc/robot/robotd.toml", "/opt/robot/daemon/releases/0.15.0/version.toml",
                      "/opt/robot/daemon/releases/0.15.0/bin/robotd",
+                     "/usr/lib/systemd/system/updaterd.service.d/20-saha-offline.conf",
                      "/opt/robot/policies/releases/seed-v5/velstand.onnx"]
             if machine == "radxa-zero-3w":
                 files += ["/boot/fitImage", "/boot/extlinux/extlinux.conf"]

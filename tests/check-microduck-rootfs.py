@@ -136,6 +136,9 @@ def inspect(root, manifest, machine, metadata):
         dropin = read(f"/usr/lib/systemd/system/{unit}.service.d/10-yocto.conf")
         require("Environment=ORT_DYLIB_PATH=/usr/lib/libonnxruntime.so.1" in dropin, f"ORT environment: {unit}")
         require("Environment=GST_PLUGIN_PATH=/usr/lib/gstreamer-1.0" in dropin, f"GST environment: {unit}")
+    offline_unit = read("/usr/lib/systemd/system/updaterd.service.d/20-saha-offline.conf")
+    require({"After=", "Wants="} <= set(offline_unit.splitlines()),
+            "updaterd can delay offline media startup")
     require(not path("/etc/systemd/system/multi-user.target.wants/tofd.service").exists(), "optional ToF enabled")
     require('GROUP="i2c", MODE="0660"' in read(f"/etc/udev/rules.d/60-microduck-{board}.rules"), "I2C permissions")
     rules = read(f"/etc/udev/rules.d/60-microduck-{board}.rules")
