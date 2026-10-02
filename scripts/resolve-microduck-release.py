@@ -1,0 +1,157 @@
+#!/usr/bin/env python3
+"""Freeze an official Microduck daemon release for one Saha build directory."""
+
+import argparse
+import json
+from pathlib import Path
+import re
+import subprocess
+import sys
+import tempfile
+from urllib.error import HTTPError, URLError
+from urllib.parse import quote
+from urllib.request import Request, urlopen
+
+
+REPO = "pollen-robotics/microduck"
+GIT_URL = f"https://github.com/{REPO}.git"
+API = f"https://api.github.com/repos/{REPO}"
+TAG_PATTERN = re.compile(r"daemon-v(\d+)\.(\d+)\.(\d+)")
+SHA256_PATTERN = re.compile(r"[0-9a-f]{64}")
+REVISION_PATTERN = re.compile(r"[0-9a-f]{40}")
+
+
+def fetch_json(url):
+    request = Request(url, headers={"Accept": "application/vnd.github+json",
+                                    "User-Agent": "saha-microduck-release-resolver"})
+    with urlopen(request, timeout=30) as response:
+        return json.load(response)
+
+
+def stable_version(release):
+    match = TAG_PATTERN.fullmatch(release.get("tag_name", ""))
+    if not match or release.get("draft") is not False or release.get("prerelease") is not False:
+        return None
+    return tuple(map(int, match.groups()))
+
+
+def find_release(requested):
+    if requested != "latest":
+        tag = requested if requested.startswith("daemon-v") else f"daemon-v{requested}"
+        if not TAG_PATTERN.fullmatch(tag):
+            raise ValueError(f"invalid Microduck release: {requested}")
+        release = fetch_json(f"{API}/releases/tags/{quote(tag)}")
+        if stable_version(release) is None or release["tag_name"] != tag:
+            raise ValueError(f"not a stable daemon release: {tag}")
+        return release
+
+    stable = []
+    page = 1
+    while True:
+        releases = fetch_json(f"{API}/releases?per_page=100&page={page}")
+        if not isinstance(releases, list):
+            raise ValueError("GitHub did not return a release list")
+        stable.extend((stable_version(item), item) for item in releases if stable_version(item) is not None)
+        if len(releases) < 100:
+            break
+        page += 1
+    if not stable:
+        raise ValueError("no stable daemon-vX.Y.Z release found")
+    return max(stable, key=lambda item: item[0])[1]
+
+
+def tag_revision(tag):
+    output = subprocess.check_output(
+        ["git", "ls-remote", GIT_URL, f"refs/tags/{tag}", f"refs/tags/{tag}^{{}}"],
+        text=True, timeout=60)
+    refs = dict(line.split("\t", 1)[::-1] for line in output.splitlines())
+    revision = refs.get(f"refs/tags/{tag}^{{}}", refs.get(f"refs/tags/{tag}"))
+    if not revision or not REVISION_PATTERN.fullmatch(revision):
+        raise ValueError(f"release tag not found: {tag}")
+    return revision
+
+
+def validate_lock(lock):
+    if lock.get("schema") != 1 or lock.get("repository") != REPO:
+        raise ValueError("invalid Microduck release lock schema/repository")
+    tag = lock.get("tag", "")
+    match = TAG_PATTERN.fullmatch(tag)
+    if not match or lock.get("version") != ".".join(match.groups()):
+        raise ValueError("Microduck release lock tag/version mismatch")
+    if not REVISION_PATTERN.fullmatch(lock.get("source_revision", "")):
+        raise ValueError("invalid Microduck source revision")
+    if not SHA256_PATTERN.fullmatch(lock.get("archive_sha256", "")):
+        raise ValueError("invalid Microduck archive SHA256")
+    expected_url = f"https://github.com/{REPO}/releases/download/{tag}/daemon-{lock['version']}.tar.zst"
+    if lock.get("archive_url") != expected_url:
+        raise ValueError("Microduck archive URL does not match release tag")
+    return lock
+
+
+def resolve_release(release):
+    version = stable_version(release)
+    if version is None:
+        raise ValueError("not a stable Microduck daemon release")
+    tag = release["tag_name"]
+    version_text = ".".join(map(str, version))
+    archive_name = f"daemon-{version_text}.tar.zst"
+    assets = [asset for asset in release.get("assets", []) if asset.get("name") == archive_name]
+    if len(assets) != 1:
+        raise ValueError(f"release {tag} has no unique {archive_name} asset")
+    digest = assets[0].get("digest", "")
+    if not digest.startswith("sha256:") or not SHA256_PATTERN.fullmatch(digest.removeprefix("sha256:")):
+        raise ValueError(f"release {tag} lacks an asset SHA256 digest")
+    lock = {"schema": 1, "repository": REPO, "tag": tag, "version": version_text,
+            "source_revision": tag_revision(tag), "archive_url": assets[0]["browser_download_url"],
+            "archive_sha256": digest.removeprefix("sha256:")}
+    return validate_lock(lock)
+
+
+def write_atomic(path, content):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile(mode="w", dir=path.parent, prefix=f".{path.name}.",
+                                     delete=False) as stream:
+        temporary = Path(stream.name)
+        stream.write(content)
+    temporary.replace(path)
+
+
+def write_build_lock(output_dir, lock):
+    validate_lock(lock)
+    lock_text = json.dumps(lock, indent=2) + "\n"
+    inc = ("# Generated by scripts/resolve-microduck-release.py; see microduck-release.lock.json\n"
+           f'MICRODUCK_VERSION = "{lock["version"]}"\n'
+           f'MICRODUCK_TAG = "{lock["tag"]}"\n'
+           f'MICRODUCK_SRCREV = "{lock["source_revision"]}"\n'
+           f'MICRODUCK_ARCHIVE_SHA256 = "{lock["archive_sha256"]}"\n')
+    archive_name = (f"{lock['tag']}-{lock['source_revision'][:12]}-"
+                    f"{lock['archive_sha256'][:12]}.json")
+    archived_lock = output_dir.parent / "release-locks" / archive_name
+    write_atomic(archived_lock, lock_text)
+    write_atomic(output_dir / "microduck-release.lock.json", lock_text)
+    write_atomic(output_dir / "microduck-release.inc", inc)
+    return archived_lock
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--output-dir", type=Path, required=True, help="target build/conf directory")
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument("--release", default="latest", help="latest (default) or daemon-vX.Y.Z")
+    group.add_argument("--lock", type=Path, help="reuse an existing lock without network access")
+    args = parser.parse_args()
+    try:
+        if args.lock:
+            lock = validate_lock(json.loads(args.lock.read_text()))
+        else:
+            lock = resolve_release(find_release(args.release))
+        archived_lock = write_build_lock(args.output_dir, lock)
+    except (OSError, ValueError, KeyError, TypeError, HTTPError, URLError,
+            subprocess.CalledProcessError, subprocess.TimeoutExpired) as error:
+        parser.exit(1, f"Microduck release resolution failed: {error}\n")
+    print(f"Microduck {lock['tag']} @ {lock['source_revision']} "
+          f"(SHA256 {lock['archive_sha256']}); lock: {archived_lock}")
+
+
+if __name__ == "__main__":
+    main()
