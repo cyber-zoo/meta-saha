@@ -6,6 +6,17 @@ ROS, Home Assistant and RDK accelerator options are rejected before Docker.
 
 ## Current validation
 
+2026-10-02: Saha `dc65bf9` upgraded Microduck to stable daemon 0.15.1. The
+complete 5,183-task image build, 1,249-package rootfs, WIC/FIT/HAT inspection,
+systemd verification and isolated ARM64 software suite passed. All ten models
+warmed up; the 60-second FakeIo walk recorded 60 healthy samples and no missed
+ticks. WIC SHA256:
+`ec110db641e34178e3300019452178b1533bffbd7a7669f66f1f71a15508963a`.
+Current reports are `rootfs-0151.json`, `boot-0151.json` and `runtime-0151/`
+under `build/validation/radxa-zero-3w/`. Physical qualification is pending.
+
+Previous 0.15.0 baseline:
+
 2026-10-02: complete `saha-image-robot` build and package/rootfs/image QA
 passed, including the AIC SDIO module on Linux 6.18.39. A clean metadata build
 at Saha `b03ae0f` completed all 5,183 tasks. The actual 1,249-package rootfs
@@ -15,7 +26,7 @@ config IPC, systemd unit verification and media test-source startup. All 60
 walk-profile health samples were healthy with no missed ticks under FakeIo.
 
 See [the image checks and commissioning procedure](../microduck.md).
-Local results are `build/validation/radxa-zero-3w/qualification.json`,
+Previous local results are `build/validation/radxa-zero-3w/qualification.json`,
 `rootfs.json`, `boot.json` and `runtime-gst-discovery/`. Physical boot, UART/IMU,
 both radio variants, gamepad, audio and sustained gait remain unverified.
 The dated notes below retain the validation levels of earlier increments.

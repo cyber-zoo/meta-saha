@@ -6,6 +6,17 @@ ROS, Home Assistant and RDK accelerator options are rejected before Docker.
 
 ## Current validation
 
+2026-10-02: Saha `dc65bf9` upgraded Microduck to stable daemon 0.15.1. The
+complete 6,445-task image build, 677-package rootfs, MBR WIC/uImage/HAT
+inspection, systemd verification and isolated ARM64 software suite passed. All
+ten models warmed up; the 60-second FakeIo walk recorded 60 healthy samples
+and no missed ticks. Compressed WIC SHA256:
+`060f7b97ac4b3828327ab276e25fc498d8eb6497c354617a1f0ab2c8dd88ad13`.
+Current reports are `rootfs-0151.json`, `boot-0151.json` and `runtime-0151/`
+under `build/validation/orangepi-zero3w/`. Physical qualification is pending.
+
+Previous 0.15.0 baseline:
+
 2026-10-02: clean Saha `b03ae0f` with BSP `b3bfd8b` completed all 6,445
 build tasks. Vendor Linux 6.6.98, all modules, native uImage and ARM32 boot
 packing/package QA passed. The complete 677-package rootfs and MBR WIC passed
@@ -15,7 +26,7 @@ config IPC, systemd unit verification and media test-source startup. All 60
 walk-profile health samples were healthy with no missed ticks under FakeIo.
 
 See [the image checks and commissioning procedure](../microduck.md).
-Local results are `build/validation/orangepi-zero3w/qualification.json`,
+Previous local results are `build/validation/orangepi-zero3w/qualification.json`,
 `rootfs.json`, `boot.json` and `runtime/`. Physical boot, UART/IMU, radio,
 gamepad, audio and sustained gait remain unverified. The dated notes below
 retain the validation levels of earlier increments.

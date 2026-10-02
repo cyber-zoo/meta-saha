@@ -6,7 +6,32 @@ kernel, boot, firmware and device trees; Saha owns runtime dependencies,
 services and application configuration. Existing Jetson/RDK/Qualcomm images
 keep their ROS selection.
 
-## Completed software baseline
+## Current software baseline: daemon 0.15.1
+
+2026-10-02: Saha `dc65bf9` pins the [upstream stable 0.15.1 release](https://github.com/pollen-robotics/microduck/releases/tag/daemon-v0.15.1),
+source `1fa84386f07884e27866411bc1ba166977bced95` and published ARM64 archive
+SHA256 `b1a10b6c2bd99e4de42774818cf94d6d1ca5a9f875e82698d68d8d5ae287eb2c`.
+Both complete image builds, package/image QA, SPDX/SBOM, rootfs and SD boot
+inspection passed. The isolated ARM64 suites passed all eleven binaries, nine
+systemd units, updater self-test, ten ONNX model warmups, config IPC and
+error-checked test-source media. Each 60-second FakeIo walk recorded 60 healthy
+samples with zero missed ticks. Physical boot, peripherals and gait remain
+unverified.
+The published 0.15.1 `padd` and `mediad` units no longer pull a deliberately
+stopped `robotd` back into service; both images contain the upstream unit bytes.
+
+| Target | Build tasks | Rootfs packages | SD artifact SHA256 |
+| --- | ---: | ---: | --- |
+| `radxa-zero-3w` | 5,183 | 1,249 | `.wic` `ec110db641e34178e3300019452178b1533bffbd7a7669f66f1f71a15508963a` |
+| `orangepi-zero3w` | 6,445 | 677 | `.wic.gz` `060f7b97ac4b3828327ab276e25fc498d8eb6497c354617a1f0ab2c8dd88ad13` |
+
+The A733 raw WIC SHA256 is
+`05d8fcea6daba01b9d85b43c3c937bea01481ed5b952b3a9257df8b092c64064`.
+Local reports are `build/validation/<target>/rootfs-0151.json`, `boot-0151.json`
+and `runtime-0151/runtime.json`. The prior 0.15.0 result remains below as a
+separate rollback baseline.
+
+## Previous 0.15.0 software baseline
 
 2026-10-02: clean Saha metadata `b03ae0f` completed both full image builds,
 using upstream meta-rockchip `9d02575` for Radxa and independent BSP `b3bfd8b`
@@ -74,8 +99,8 @@ points. Revert consuming commits before changes to their dependencies.
 
 ## Runtime contract
 
-The image packages the official stable `daemon-v0.15.0` ARM64 release, source
-`a9ec4b2079ef8ee7904014089c885bb07d57d63c`, ONNX Runtime 1.28.0 and policy set
+The image packages the official stable `daemon-v0.15.1` ARM64 release, source
+`1fa84386f07884e27866411bc1ba166977bced95`, ONNX Runtime 1.28.0 and policy set
 v5. Every archive/model has a SHA256 fetch check. Policies are Apache-2.0 per
 the [upstream model card](https://huggingface.co/pollen-robotics/microduck-policies/blob/main/README.md).
 Weights and upstream binaries are fetched or reused from a checksum-verified
@@ -112,7 +137,7 @@ The original unit remains intact, while local updater status and the dependent
 `mediad` startup no longer wait for NetworkManager's 60-second online timeout
 on an unprovisioned or offline board.
 
-`/opt/robot/daemon/current` selects `releases/0.15.0` and
+`/opt/robot/daemon/current` selects `releases/0.15.1` and
 `/opt/robot/policies/current` selects `releases/seed-v5`. `robotctl` is on PATH.
 The runtime loads `/usr/lib/libonnxruntime.so.1` via `ORT_DYLIB_PATH`.
 GStreamer uses the MPL-2.0 upstream Microduck v3 WebRTC/RTP plugins and x264
@@ -143,14 +168,16 @@ HAT builds use `policy.voltage_adapt=false`, `nominal_voltage=5.0` and disable
 the upstream 2S-battery empty-pack shutdown. A regulated motor rail is not a
 state-of-charge measurement. The upstream fall/thermal/bus guards remain
 enabled. Robot geometry/calibration requires separate commissioning. Microduck
-0.15.0 does not accept the older `[battery]` or `[body_imu]` parameter tables;
+0.15.1 does not accept the older `[battery]` or `[body_imu]` parameter tables;
 do not transplant them from a different daemon version.
 
 Scheduled upstream OTA is disabled: Debian release hooks install packages with
 apt and have not been qualified for Yocto. The updater serves status with a
 distinct `saha-daemon-v` feed prefix and no non-root mutation allowlist. Do not
 apply the ordinary Debian daemon feed. Qualified Saha package/image updates
-must retain board calibration and use the recorded rollback procedure.
+must retain board calibration and use the recorded rollback procedure. The
+0.15.1 updater configuration requires all eleven release binaries before any
+future Saha-qualified daemon update can become live.
 The upstream `robot-boot-check` service/timer for automatic failed-update boot
 recovery is not installed; that recovery path needs a qualified Yocto updater
 before it can be enabled. Until then, restore a previous qualified image after
