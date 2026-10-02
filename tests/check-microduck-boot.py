@@ -115,8 +115,8 @@ def inspect(wic, deploy, root, machine):
             fsck = subprocess.run(["e2fsck", "-fn", str(filesystem)], stdout=subprocess.PIPE,
                                   stderr=subprocess.STDOUT, text=True)
             require(fsck.returncode == 0, f"ext4 consistency check failed: {fsck.stdout}")
-            files = ["/etc/robot/robotd.toml", "/opt/robot/daemon/releases/0.15.0/version.toml",
-                     "/opt/robot/daemon/releases/0.15.0/bin/robotd",
+            files = ["/etc/robot/robotd.toml", "/opt/robot/daemon/current/version.toml",
+                     "/opt/robot/daemon/current/bin/robotd",
                      "/usr/lib/systemd/system/updaterd.service.d/20-saha-offline.conf",
                      "/opt/robot/policies/releases/seed-v5/velstand.onnx"]
             if machine == "radxa-zero-3w":

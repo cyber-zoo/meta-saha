@@ -66,12 +66,20 @@ def inspect(root, manifest, machine, metadata):
     require(not any(forbidden.match(name) for name in packages), "ROS/container package in image")
     require(not path("/opt/ros").exists() and not path("/usr/bin/ros2").exists(), "ROS files in image")
 
-    runtime_recipe = metadata / "saha-layers/meta-saha-microduck/recipes-robot/microduck/microduck-runtime_0.15.0.bb"
-    expected_revision = re.search(r'MICRODUCK_SRCREV = "([0-9a-f]{40})"', runtime_recipe.read_text()).group(1)
+    runtime_recipes = list((metadata / "saha-layers/meta-saha-microduck/recipes-robot/microduck").glob(
+        "microduck-runtime_*.bb"))
+    require(len(runtime_recipes) == 1, "expected one pinned Microduck runtime recipe")
+    runtime_recipe = runtime_recipes[0]
+    expected_version = runtime_recipe.stem.removeprefix("microduck-runtime_")
+    require(re.fullmatch(r"\d+\.\d+\.\d+", expected_version), "invalid Microduck runtime recipe version")
+    revision_match = re.search(r'MICRODUCK_SRCREV = "([0-9a-f]{40})"', runtime_recipe.read_text())
+    require(revision_match is not None, "Microduck source revision missing")
+    expected_revision = revision_match.group(1)
     version = tomllib.loads(read("/opt/robot/daemon/current/version.toml"))
-    require(version["version"] == "0.15.0" and version["revision"] == expected_revision,
+    require(version["version"] == expected_version and version["revision"] == expected_revision,
             "runtime release/source mismatch")
-    require(os.readlink(root / "opt/robot/daemon/current") == "releases/0.15.0", "daemon release link")
+    require(os.readlink(root / "opt/robot/daemon/current") == f"releases/{expected_version}",
+            "daemon release link")
     require(os.readlink(root / "opt/robot/policies/current") == "releases/seed-v5", "policy release link")
     require(path("/usr/bin/robotctl") == path("/opt/robot/daemon/current/bin/robotctl"), "robotctl link")
 
