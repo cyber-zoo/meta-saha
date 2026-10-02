@@ -6,13 +6,25 @@ ROS, Home Assistant and RDK accelerator options are rejected before Docker.
 
 ## Current validation
 
+2026-10-02: Saha `3e4752a`/`2cd9d0a` auto-selected stable daemon 0.15.1 and
+locked its source commit and archive checksum for this board. The complete
+5,184-task image build, 1,249-package rootfs, WIC/FIT/HAT inspection and
+isolated ARM64 software suite passed. All ten models warmed up; the 60-second
+FakeIo walk recorded 60 healthy samples and no missed ticks. WIC SHA256:
+`785721a548a58ddffb78afe1dfbcb0fc845214295b9ee541041944e49234bcae`.
+Reports are `rootfs-auto-release.json`, `boot-auto-release.json` and
+`runtime-auto-release/` under `build/validation/radxa-zero-3w/`; the release
+lock is in `build/radxa-zero-3w/release-locks/`. Physical qualification is pending.
+
+Previous pinned 0.15.1 baseline:
+
 2026-10-02: Saha `dc65bf9` upgraded Microduck to stable daemon 0.15.1. The
 complete 5,183-task image build, 1,249-package rootfs, WIC/FIT/HAT inspection,
 systemd verification and isolated ARM64 software suite passed. All ten models
 warmed up; the 60-second FakeIo walk recorded 60 healthy samples and no missed
 ticks. WIC SHA256:
 `ec110db641e34178e3300019452178b1533bffbd7a7669f66f1f71a15508963a`.
-Current reports are `rootfs-0151.json`, `boot-0151.json` and `runtime-0151/`
+Reports are `rootfs-0151.json`, `boot-0151.json` and `runtime-0151/`
 under `build/validation/radxa-zero-3w/`. Physical qualification is pending.
 
 Previous 0.15.0 baseline:

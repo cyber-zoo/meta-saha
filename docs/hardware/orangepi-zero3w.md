@@ -6,13 +6,26 @@ ROS, Home Assistant and RDK accelerator options are rejected before Docker.
 
 ## Current validation
 
+2026-10-02: Saha `3e4752a`/`2cd9d0a` auto-selected stable daemon 0.15.1 and
+locked its source commit and archive checksum for this board. The complete
+6,446-task image build, 677-package rootfs, MBR WIC/uImage/HAT inspection and
+isolated ARM64 software suite passed. All ten models warmed up; the 60-second
+FakeIo walk recorded 60 healthy samples and one missed tick under emulation.
+Compressed WIC SHA256:
+`60d06f2e60d75550d9bccb9ca9ec62eb64d8d7c97e5a0731feea695d60846650`.
+Reports are `rootfs-auto-release.json`, `boot-auto-release.json` and
+`runtime-auto-release/` under `build/validation/orangepi-zero3w/`; the release
+lock is in `build/orangepi-zero3w/release-locks/`. Physical qualification is pending.
+
+Previous pinned 0.15.1 baseline:
+
 2026-10-02: Saha `dc65bf9` upgraded Microduck to stable daemon 0.15.1. The
 complete 6,445-task image build, 677-package rootfs, MBR WIC/uImage/HAT
 inspection, systemd verification and isolated ARM64 software suite passed. All
 ten models warmed up; the 60-second FakeIo walk recorded 60 healthy samples
 and no missed ticks. Compressed WIC SHA256:
 `060f7b97ac4b3828327ab276e25fc498d8eb6497c354617a1f0ab2c8dd88ad13`.
-Current reports are `rootfs-0151.json`, `boot-0151.json` and `runtime-0151/`
+Reports are `rootfs-0151.json`, `boot-0151.json` and `runtime-0151/`
 under `build/validation/orangepi-zero3w/`. Physical qualification is pending.
 
 Previous 0.15.0 baseline:

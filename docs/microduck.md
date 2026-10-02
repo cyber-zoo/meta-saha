@@ -6,7 +6,31 @@ kernel, boot, firmware and device trees; Saha owns runtime dependencies,
 services and application configuration. Existing Jetson/RDK/Qualcomm images
 keep their ROS selection.
 
-## Current software baseline: daemon 0.15.1
+## Current software baseline: auto-selected daemon 0.15.1
+
+2026-10-02: Saha `3e4752a`/`2cd9d0a` selected the newest stable upstream daemon
+release for each board and froze the tag, exact source commit and published
+archive SHA256 in per-build locks. The selected release was 0.15.1 for both.
+The complete 5,184-task Radxa and 6,446-task Orange Pi image builds passed,
+including release/archive validation, package/image QA and SPDX/SBOM. Both new
+rootfs archives and SD images passed inspection. Isolated ARM64 execution passed
+all eleven binaries, nine systemd units, ten model warmups, updater self-test,
+config IPC, media pipelines and 60-second FakeIo walks. Each walk had 60 healthy
+samples; Radxa had zero missed ticks and Orange Pi had one under emulation.
+Physical boot, peripherals, real-time behavior and gait remain unverified.
+
+| Target | Build tasks | Rootfs packages | SD artifact SHA256 |
+| --- | ---: | ---: | --- |
+| `radxa-zero-3w` | 5,184 | 1,249 | `.wic` `785721a548a58ddffb78afe1dfbcb0fc845214295b9ee541041944e49234bcae` |
+| `orangepi-zero3w` | 6,446 | 677 | `.wic.gz` `60d06f2e60d75550d9bccb9ca9ec62eb64d8d7c97e5a0731feea695d60846650` |
+
+The A733 raw WIC SHA256 is
+`24597eca79c1443208abefe7dc16ad194b65ec548473d3037ca6d58755c926a7`.
+New reports are `build/validation/<target>/rootfs-auto-release.json`,
+`boot-auto-release.json` and `runtime-auto-release/runtime.json`; the matching
+JSON lock lives in `build/<target>/release-locks/`.
+
+## Previous pinned 0.15.1 software baseline
 
 2026-10-02: Saha `dc65bf9` pins the [upstream stable 0.15.1 release](https://github.com/pollen-robotics/microduck/releases/tag/daemon-v0.15.1),
 source `1fa84386f07884e27866411bc1ba166977bced95` and published ARM64 archive
@@ -30,6 +54,47 @@ The A733 raw WIC SHA256 is
 Local reports are `build/validation/<target>/rootfs-0151.json`, `boot-0151.json`
 and `runtime-0151/runtime.json`. The prior 0.15.0 result remains below as a
 separate rollback baseline.
+
+## Following official daemon releases
+
+`scripts/saha-build` now resolves the newest stable upstream `daemon-vX.Y.Z`
+release at the start of each Microduck build. It ignores development/prerelease
+tags, verifies that the official ARM64 archive has a SHA256 digest, resolves the
+tag to an exact Git commit, and writes both BitBake variables and a JSON lock
+under `build/<target>/conf/`. A copy of each distinct lock is kept
+under `build/<target>/release-locks/`. The current lock is also embedded in the
+image as `/usr/share/saha/microduck/runtime-source` (version, revision and
+archive SHA256). Ordinary build commands need no version edits:
+
+```sh
+scripts/saha-build radxa-zero-3w
+scripts/saha-build orangepi-zero3w
+cat build/radxa-zero-3w/conf/microduck-release.lock.json
+```
+
+For a reproducible rebuild, point either board at a saved JSON lock:
+
+```sh
+SAHA_MICRODUCK_RELEASE_LOCK=build/radxa-zero-3w/release-locks/<lock>.json \
+    scripts/saha-build orangepi-zero3w
+```
+
+This avoids release API/tag lookups; a fully offline build still requires the
+sources and archive in BitBake's download cache.
+`SAHA_MICRODUCK_RELEASE=0.15.1` instead selects a named stable release through
+the API and needs network access. `saha-shell` reuses its build directory's
+active lock by default, so inspection does not silently advance a previous
+build; set either variable to select a different release. `saha-validate` only
+checks kas configuration and does not resolve a release.
+
+Automatic selection does not automatically qualify a new daemon. The recipe
+checks archive version, source revision and the eleven expected binaries; the
+usual license, fetch checksum, package and image checks still apply. A changed
+config schema, service contract, license or binary set requires a reviewed Saha
+change and both-board validation. If the latest release or GitHub is unavailable,
+the build fails instead of silently falling back to an older release. The
+qualified daemon release is 0.15.1 at the time of this record; a future release
+needs the same checks before it can be called qualified.
 
 ## Previous 0.15.0 software baseline
 
@@ -99,9 +164,9 @@ points. Revert consuming commits before changes to their dependencies.
 
 ## Runtime contract
 
-The image packages the official stable `daemon-v0.15.1` ARM64 release, source
-`1fa84386f07884e27866411bc1ba166977bced95`, ONNX Runtime 1.28.0 and policy set
-v5. Every archive/model has a SHA256 fetch check. Policies are Apache-2.0 per
+The build selects the official stable `daemon-vX.Y.Z` ARM64 release and locks its
+source commit and archive SHA256; ONNX Runtime 1.28.0 and policy set v5 remain
+pinned. Every archive/model has a SHA256 fetch check. Policies are Apache-2.0 per
 the [upstream model card](https://huggingface.co/pollen-robotics/microduck-policies/blob/main/README.md).
 Weights and upstream binaries are fetched or reused from a checksum-verified
 download cache; they are not copied into this repository. Recipe-specific
@@ -111,7 +176,7 @@ binaries. This build packages the published runtime; it does not compile Rust
 daemon sources.
 
 Source/license inputs use Git revisions, not GitHub-generated source archives:
-the daemon revision above and GST v3 source
+the locked daemon revision and GST v3 source
 `a9a839f274fb20698d3abc2639a28d75421c5471`. Wrynose's `src-uri-bad` check stays
 enabled. Published binary archives retain their original SHA256 checks. The
 plugin source's Apache license has a leading newline; its exact Git bytes are
@@ -137,7 +202,7 @@ The original unit remains intact, while local updater status and the dependent
 `mediad` startup no longer wait for NetworkManager's 60-second online timeout
 on an unprovisioned or offline board.
 
-`/opt/robot/daemon/current` selects `releases/0.15.1` and
+`/opt/robot/daemon/current` selects the locked `releases/<version>` and
 `/opt/robot/policies/current` selects `releases/seed-v5`. `robotctl` is on PATH.
 The runtime loads `/usr/lib/libonnxruntime.so.1` via `ORT_DYLIB_PATH`.
 GStreamer uses the MPL-2.0 upstream Microduck v3 WebRTC/RTP plugins and x264
@@ -203,12 +268,15 @@ tar --zstd -xf "$deploy/saha-image-robot-radxa-zero-3w.rootfs.tar.zst" \
 python3 tests/check-microduck-rootfs.py \
     --rootfs build/validation/radxa-zero-3w/rootfs \
     --manifest "$deploy/saha-image-robot-radxa-zero-3w.rootfs.manifest" \
-    --machine radxa-zero-3w
+    --machine radxa-zero-3w \
+    --release-lock build/radxa-zero-3w/release-locks/<lock>.json
 python3 tests/test-microduck-rootfs.py
 ```
 
 Substitute `orangepi-zero3w` for the other target. Inspect against the same
-metadata revision used to build the image (`--metadata` accepts a frozen clone).
+release lock and metadata revision used to build the image (`--metadata` accepts
+a frozen clone). If `--release-lock` is omitted, the checker uses the active
+`build/<machine>/conf/microduck-release.lock.json`.
 The checker fails on missing runtime/board/radio packages, ROS/container files,
 incorrect release identity, missing direct ELF dependencies, model checksum
 changes, unqualified power/OTA defaults, disabled required services or missing
