@@ -1,0 +1,72 @@
+From fa4d566a605bc4cf32d69f16ef8cf9696635f75a Mon Sep 17 00:00:00 2001
+From: Pierre Gondois <pierre.gondois@arm.com>
+Date: Wed, 4 Jan 2023 19:30:27 +0100
+Subject: [PATCH] ACPI: PPTT: Remove acpi_find_cache_levels()
+
+Upstream-Status: Backport [https://github.com/torvalds/linux/commit/fa4d566a605bc4cf32d69f16ef8cf9696635f75a]
+
+acpi_find_cache_levels() is used at a single place and is short
+enough to be merged into the calling function. The removal allows
+an easier renaming of the calling function in the next patch.
+
+Also reorder the local variables in the 'reversed Christmas tree'
+order.
+
+Signed-off-by: Pierre Gondois <pierre.gondois@arm.com>
+Reviewed-by: Jeremy Linton <jeremy.linton@arm.com>
+Acked-by: Rafael J. Wysocki  <rafael.j.wysocki@intel.com>
+Acked-by: Palmer Dabbelt <palmer@rivosinc.com>
+Link: https://lore.kernel.org/r/20230104183033.755668-5-pierre.gondois@arm.com
+Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
+---
+ drivers/acpi/pptt.c | 21 ++++++---------------
+ 1 file changed, 6 insertions(+), 15 deletions(-)
+
+diff --git a/drivers/acpi/pptt.c b/drivers/acpi/pptt.c
+index c91342dcbcd636..97c1d33822d1e8 100644
+--- a/drivers/acpi/pptt.c
++++ b/drivers/acpi/pptt.c
+@@ -281,19 +281,6 @@ static struct acpi_pptt_processor *acpi_find_processor_node(struct acpi_table_he
+ 	return NULL;
+ }
+ 
+-static int acpi_find_cache_levels(struct acpi_table_header *table_hdr,
+-				  u32 acpi_cpu_id)
+-{
+-	int number_of_levels = 0;
+-	struct acpi_pptt_processor *cpu;
+-
+-	cpu = acpi_find_processor_node(table_hdr, acpi_cpu_id);
+-	if (cpu)
+-		number_of_levels = acpi_count_levels(table_hdr, cpu);
+-
+-	return number_of_levels;
+-}
+-
+ static u8 acpi_cache_type(enum cache_type type)
+ {
+ 	switch (type) {
+@@ -613,9 +600,10 @@ static int check_acpi_cpu_flag(unsigned int cpu, int rev, u32 flag)
+  */
+ int acpi_find_last_cache_level(unsigned int cpu)
+ {
+-	u32 acpi_cpu_id;
++	struct acpi_pptt_processor *cpu_node;
+ 	struct acpi_table_header *table;
+ 	int number_of_levels = 0;
++	u32 acpi_cpu_id;
+ 
+ 	table = acpi_get_pptt();
+ 	if (!table)
+@@ -624,7 +612,10 @@ int acpi_find_last_cache_level(unsigned int cpu)
+ 	pr_debug("Cache Setup find last level CPU=%d\n", cpu);
+ 
+ 	acpi_cpu_id = get_acpi_id_for_cpu(cpu);
+-	number_of_levels = acpi_find_cache_levels(table, acpi_cpu_id);
++	cpu_node = acpi_find_processor_node(table, acpi_cpu_id);
++	if (cpu_node)
++		number_of_levels = acpi_count_levels(table, cpu_node);
++
+ 	pr_debug("Cache Setup find last level level=%d\n", number_of_levels);
+ 
+ 	return number_of_levels;

@@ -1,0 +1,61 @@
+From 3da72e18371c41a6f6f96b594854b178168c7757 Mon Sep 17 00:00:00 2001
+From: Pierre Gondois <pierre.gondois@arm.com>
+Date: Wed, 26 Oct 2022 20:59:54 +0200
+Subject: [PATCH] cacheinfo: Decrement refcount in cache_setup_of_node()
+
+Upstream-Status: Backport [https://github.com/torvalds/linux/commit/3da72e18371c41a6f6f96b594854b178168c7757]
+
+Refcounts to DT nodes are only incremented in the function
+and never decremented. Decrease the refcounts when necessary.
+
+Signed-off-by: Pierre Gondois <pierre.gondois@arm.com>
+Reviewed-by: Sudeep Holla <sudeep.holla@arm.com>
+Link: https://lore.kernel.org/r/20221026185954.991547-1-pierre.gondois@arm.com
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/base/cacheinfo.c | 17 +++++++++++------
+ 1 file changed, 11 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/base/cacheinfo.c b/drivers/base/cacheinfo.c
+index 4b5cd08c5a657f..04317cde800cb4 100644
+--- a/drivers/base/cacheinfo.c
++++ b/drivers/base/cacheinfo.c
+@@ -196,7 +196,7 @@ static void cache_of_set_props(struct cacheinfo *this_leaf,
+ 
+ static int cache_setup_of_node(unsigned int cpu)
+ {
+-	struct device_node *np;
++	struct device_node *np, *prev;
+ 	struct cacheinfo *this_leaf;
+ 	unsigned int index = 0;
+ 
+@@ -206,19 +206,24 @@ static int cache_setup_of_node(unsigned int cpu)
+ 		return -ENOENT;
+ 	}
+ 
++	prev = np;
++
+ 	while (index < cache_leaves(cpu)) {
+ 		this_leaf = per_cpu_cacheinfo_idx(cpu, index);
+-		if (this_leaf->level != 1)
++		if (this_leaf->level != 1) {
+ 			np = of_find_next_cache_node(np);
+-		else
+-			np = of_node_get(np);/* cpu node itself */
+-		if (!np)
+-			break;
++			of_node_put(prev);
++			prev = np;
++			if (!np)
++				break;
++		}
+ 		cache_of_set_props(this_leaf, np);
+ 		this_leaf->fw_token = np;
+ 		index++;
+ 	}
+ 
++	of_node_put(np);
++
+ 	if (index != cache_leaves(cpu)) /* not all OF nodes populated */
+ 		return -ENOENT;
+ 

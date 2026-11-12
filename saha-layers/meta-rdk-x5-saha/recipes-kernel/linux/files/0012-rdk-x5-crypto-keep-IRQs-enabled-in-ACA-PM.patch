@@ -1,0 +1,100 @@
+Subject: [PATCH] crypto: te: keep IRQs enabled across ACA PM HWA calls
+
+Upstream-Status: Inappropriate [pinned vendor Linux PREEMPT_RT integration]
+
+The ACA suspend/resume hooks disable local IRQs with osal_intr_lock()
+and then call HWA set_ctrl (and, for system suspend, SRAM operations).
+The HWA uses native Linux spin_lock_irqsave on spinlock_t. Under
+PREEMPT_RT that lock may block, so the outer IRQ mask triggers
+"BUG: sleeping function called from invalid context" during runtime PM,
+including Bluetooth/ECDH and certificate/AF_ALG activity.
+
+In this Linux integration the PM caller already disables the request
+agent and drains outstanding requests via lca_te_ra_suspend(); resume
+opens the agent only after te_drv_resume() completes. PM callbacks are
+serialized by the PM core and already use sleeping clock/mutex APIs.
+Remove only the redundant outer IRQ mask. Keep HWA locking, request
+quiescing, crypto algorithms, runtime PM, and diagnostic checks intact.
+Do not convert the whole OSAL to raw_spinlock_t: other users include
+free_irq() under an OSAL lock and long SRAM accesses.
+
+Qualified source: D-Robotics/x5-kernel
+c642eabfd7aacc4f44f2300e69d27ef1691a47d7.
+Runtime PM + AF_ALG/crypto and system-suspend revalidation is required.
+
+diff --git a/drivers/crypto/te/merak_driver/drv/drv_aca.c b/drivers/crypto/te/merak_driver/drv/drv_aca.c
+--- a/drivers/crypto/te/merak_driver/drv/drv_aca.c
++++ b/drivers/crypto/te/merak_driver/drv/drv_aca.c
+@@ -40,22 +40,24 @@
+ 
+ static int _te_aca_drv_suspend(struct te_crypt_drv *drv, te_suspend_state_t state)
+ {
+     int ret               = TE_SUCCESS;
+     te_aca_drv_t *aca_drv = (te_aca_drv_t *)drv;
+-    unsigned long flag    = 0;
+     bool is_busy          = false;
+ #ifdef CFG_TE_DYNCLK_CTL
+     bool is_clock_en = false;
+ #endif
+ 
+     TE_ASSERT(aca_drv);
+     TE_ASSERT(ACA_DRV_MAGIC == aca_drv->magic);
+ 
+-    /* when this function is called, MUST be in locked */
+-    flag = osal_intr_lock();
+-
++    /*
++     * The Linux PM caller has quiesced the request agent and waits for
++     * outstanding requests before suspending. HWA register access keeps
++     * its own locks. Do not mask local IRQs across those locks: spinlock_t
++     * may sleep on PREEMPT_RT, as may the SRAM swap path below.
++     */
+     /* swapped all sram */
+     if (TE_SUSPEND_MEM == state) {
+         ret = aca_sram_swap_all_blocks_nolock(&aca_drv->priv_drv->sram_pool);
+         CHECK_RET_GO;
+     }
+@@ -75,30 +77,27 @@
+ #else
+     _aca_hwa_clock_disable(ACA_DRV_GET_HWA(aca_drv));
+ #endif
+ 
+ finish:
+-    osal_intr_unlock(flag);
+     return ret;
+ }
+ 
+ static int _te_aca_drv_resume(struct te_crypt_drv *drv, te_suspend_state_t state)
+ {
+     int ret               = TE_SUCCESS;
+     te_aca_drv_t *aca_drv = (te_aca_drv_t *)drv;
+-    unsigned long flag    = 0;
+     bool is_busy          = false;
+ #ifdef CFG_TE_DYNCLK_CTL
+     bool is_clock_en = false;
+ #endif
+ 
+     (void)state;
+     TE_ASSERT(aca_drv);
+     TE_ASSERT(ACA_DRV_MAGIC == aca_drv->magic);
+ 
+-    flag = osal_intr_lock();
+-
++    /* The Linux PM caller reopens the request agent only after resume. */
+     is_busy = aca_gr_is_busy(&aca_drv->priv_drv->gr_pool);
+     CHECK_COND_GO(!is_busy, TE_ERROR_BUSY);
+ 
+     is_busy = aca_len_type_is_busy(&aca_drv->priv_drv->len_type_pool);
+     CHECK_COND_GO(!is_busy, TE_ERROR_BUSY);
+@@ -113,11 +112,10 @@
+     ret = _aca_hwa_clock_enable(ACA_DRV_GET_HWA(aca_drv));
+     CHECK_RET_GO;
+ #endif
+ 
+ finish:
+-    osal_intr_unlock(flag);
+     return ret;
+ }
+ 
+ static void _te_aca_drv_destroy(struct te_crypt_drv *drv)
+ {

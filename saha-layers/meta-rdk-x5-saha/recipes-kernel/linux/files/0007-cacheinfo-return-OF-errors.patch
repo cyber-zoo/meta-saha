@@ -1,0 +1,52 @@
+From 8844c3df001bc1d8397fddea341308da63855d53 Mon Sep 17 00:00:00 2001
+From: Pierre Gondois <pierre.gondois@arm.com>
+Date: Wed, 4 Jan 2023 19:30:25 +0100
+Subject: [PATCH] cacheinfo: Return error code in init_of_cache_level()
+
+Upstream-Status: Backport [https://github.com/torvalds/linux/commit/8844c3df001bc1d8397fddea341308da63855d53]
+
+Make init_of_cache_level() return an error code when the cache
+information parsing fails to help detecting missing information.
+
+init_of_cache_level() is only called for riscv. Returning an error
+code instead of 0 will prevent detect_cache_attributes() to allocate
+memory if an incomplete DT is parsed.
+
+Signed-off-by: Pierre Gondois <pierre.gondois@arm.com>
+Acked-by: Palmer Dabbelt <palmer@rivosinc.com>
+Link: https://lore.kernel.org/r/20230104183033.755668-3-pierre.gondois@arm.com
+Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
+---
+ drivers/base/cacheinfo.c | 10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/base/cacheinfo.c b/drivers/base/cacheinfo.c
+index b60788aacfefc5..0a96d0b9338aba 100644
+--- a/drivers/base/cacheinfo.c
++++ b/drivers/base/cacheinfo.c
+@@ -251,11 +251,11 @@ int init_of_cache_level(unsigned int cpu)
+ 		of_node_put(prev);
+ 		prev = np;
+ 		if (!of_device_is_compatible(np, "cache"))
+-			break;
++			goto err_out;
+ 		if (of_property_read_u32(np, "cache-level", &level))
+-			break;
++			goto err_out;
+ 		if (level <= levels)
+-			break;
++			goto err_out;
+ 		if (of_property_read_bool(np, "cache-size"))
+ 			++leaves;
+ 		if (of_property_read_bool(np, "i-cache-size"))
+@@ -270,6 +270,10 @@ int init_of_cache_level(unsigned int cpu)
+ 	this_cpu_ci->num_leaves = leaves;
+ 
+ 	return 0;
++
++err_out:
++	of_node_put(np);
++	return -EINVAL;
+ }
+ 
+ #else

@@ -31,3 +31,19 @@ tegra-demo-distro (master)
 - Project: https://github.com/OE4T/tegra-demo-distro
 - Source: https://github.com/OE4T/tegra-demo-distro
 - Usage: modified
+
+RDK X5 PREEMPT_RT integration
+- Public source references: Linux PREEMPT_RT and the pinned D-Robotics kernel;
+  patch headers and backport manifests identify the applicable upstream commits.
+- Usage: X5-only kernel integration and a manual measurement helper.
+- The configuration guard, fragment and measurement helper retain their MIT
+  SPDX notices; the MIT text accompanies them in
+  `saha-layers/meta-rdk-x5-saha/COPYING.MIT`.
+- Linux RT and backport patches retain the applicable Linux/vendor per-file
+  licenses, upstream authorship and source references (including GPL-2.0-only
+  and GPL-2.0-or-later). The GPLv2 text accompanies them in
+  `saha-layers/meta-rdk-x5-saha/COPYING.GPL-2.0`. The repository's Apache-2.0
+  license does not relicense these kernel changes. See
+  `docs/hardware/rdk-x5-preempt-rt.md` for pinned sources and provenance.
+- Vendor BPU binaries are fetched by the existing BSP recipes under their
+  own license; no binary is included by this integration.

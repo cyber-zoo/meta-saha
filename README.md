@@ -32,6 +32,9 @@ List targets with:
 See [supported hardware](docs/hardware/README.md) for platform prerequisites,
 image variants, artifact formats, flashing, and validation limits.
 
+RDK X5 also has an optional, default-off [PREEMPT_RT profile](docs/hardware/rdk-x5-preempt-rt.md)
+for its pinned Linux 6.1.83 BSP. It can be combined with the accelerator profile.
+
 ## Prerequisites
 
 - Docker with permission to run containers as your user.

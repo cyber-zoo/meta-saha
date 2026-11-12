@@ -1,0 +1,50 @@
+Subject: [PATCH] pps: hobot: leave RT IRQ scheduling to the IRQ core
+
+Upstream-Status: Inappropriate [vendor-only driver]
+
+The RT-only priority override calls irq_to_desc and sched_setscheduler,
+which are not exported by the 6.1.83-rt28 kernel. Keep the PPS source,
+IRQ request and timestamp handler unchanged. Use the IRQ core's default
+threaded policy; administrators may tune a specific IRQ thread through
+the standard userspace scheduler interface after measuring the workload.
+This changes the attempted RT priority from a hard-coded FIFO99 override
+to the IRQ core default and does not disable PPS or export private APIs.
+Physical PPS timestamp/priority validation remains an explicit board test.
+
+diff --git a/drivers/pps/hobot-pps.c b/drivers/pps/hobot-pps.c
+index 249cb0f35..19c57ce72 100755
+--- a/drivers/pps/hobot-pps.c
++++ b/drivers/pps/hobot-pps.c
+@@ -195,11 +195,6 @@ static int32_t hobot_pps_register_source(struct platform_device *pdev,
+ {
+ 	uint32_t pps_default_params;
+ 	int32_t ret;
+-#ifdef CONFIG_PREEMPT_RT
+-	struct irq_desc *desc;
+-	struct irqaction *action;
+-	struct sched_param param = {.sched_priority = MAX_RT_PRIO - 1};
+-#endif
+ 
+ 	pps_default_params = (uint32_t)PPS_CAPTUREASSERT | (uint32_t)PPS_OFFSETASSERT;
+ 	if (data->capture_clear) {
+@@ -223,16 +218,10 @@ static int32_t hobot_pps_register_source(struct platform_device *pdev,
+ 		//pps_send_diag_error_event((u16)EventIdReqIrqErr, (u8)ERR_SEQ_0, data->safety_moduleId, __LINE__);
+ 		return -EINVAL;
+ 	}
+-#ifdef CONFIG_PREEMPT_RT
+-	desc = irq_to_desc((u32)data->irq);
+-	action = desc->action;
+-	if (action->thread != NULL) {
+-		ret = sched_setscheduler(action->thread, SCHED_FIFO, &param);
+-		if (ret < 0) {
+-			dev_err(&pdev->dev, "sched_setscheduler is fail(%d)\n", ret);
+-		}
+-	}
+-#endif
++	/* PREEMPT_RT's IRQ core owns the forced-thread policy. Configure any
++	 * per-IRQ priority from userspace rather than using unexported IRQ
++	 * descriptors and scheduler internals in this module.
++	 */
+ 	return ret;
+ }
+ 
