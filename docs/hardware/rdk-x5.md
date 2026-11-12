@@ -74,6 +74,27 @@ SAHA_BUILD_DIR=/data/yocto/build-rdk-x5 \
 
 ## Output
 
+### Optional PREEMPT_RT
+
+`SAHA_X5_PREEMPT_RT=1` selects the pinned `6.1.83-rt28` kernel and manual
+latency-measurement tools. It is disabled by default, accepts only `0` or `1`,
+and is rejected for other targets. It can be combined with
+`SAHA_X5_ACCELERATORS=1`; neither option enables the other. See the
+[RT guide](rdk-x5-preempt-rt.md) for commands, patch provenance, BPU constraints,
+and the remaining build and hardware qualification.
+
+| RT | Accelerators | Default build directory |
+| --- | --- | --- |
+| off | off | `build/rdk-x5/` |
+| off | on | `build/rdk-x5-accelerators/` |
+| on | off | `build/rdk-x5-preempt-rt/` |
+| on | on | `build/rdk-x5-preempt-rt-accelerators/` |
+
+An explicit `SAHA_BUILD_DIR` overrides the host build directory. Use a separate
+directory for each profile when keeping their artifacts.
+
+### Image artifacts
+
 The RDK X5 image is emitted as a compressed WIC disk image:
 
 ```text

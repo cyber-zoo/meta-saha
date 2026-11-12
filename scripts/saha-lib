@@ -154,9 +154,40 @@ saha_x5_accelerators_mode() {
   esac
 }
 
+saha_x5_preempt_rt_mode() {
+  local target=$1
+  local value=${SAHA_X5_PREEMPT_RT-0}
+  case "$value" in
+    0|1) ;;
+    *)
+      printf 'SAHA_X5_PREEMPT_RT must be 0 or 1 (received: %s)\n' "$value" >&2
+      return 2
+      ;;
+  esac
+  if [ "$value" = "1" ] && [ "$target" != "rdk-x5" ]; then
+    printf 'SAHA_X5_PREEMPT_RT is supported only for rdk-x5\n' >&2
+    return 2
+  fi
+  printf '%s\n' "$value"
+}
+
+saha_x5_build_name() {
+  local preempt_rt=$1
+  local accelerators=$2
+  local name=rdk-x5
+  if [ "$preempt_rt" = "1" ]; then
+    name="${name}-preempt-rt"
+  fi
+  if [ "$accelerators" = "1" ]; then
+    name="${name}-accelerators"
+  fi
+  printf '%s\n' "$name"
+}
+
 saha_kas_config_for_target() {
   local target=$1
-  local ros_distro x5_accelerators kas_config
+  local ros_distro x5_accelerators preempt_rt kas_config
+  preempt_rt="$(saha_x5_preempt_rt_mode "$target")" || return $?
   ros_distro="$(saha_current_ros_distro "$target")" || return $?
   x5_accelerators="$(saha_x5_accelerators_mode)" || return $?
 
@@ -179,11 +210,14 @@ saha_kas_config_for_target() {
       printf 'RDK X5 supports only ROS 2 Jazzy (requested: %s)\n' "$ros_distro" >&2
       return 2
     fi
+    kas_config="kas/targets/rdk-x5.yml"
     if [ "$x5_accelerators" = "1" ]; then
-      printf 'kas/targets/rdk-x5.yml:kas/include/rdk-x5-accelerators.yml\n'
-      return 0
+      kas_config="${kas_config}:kas/include/rdk-x5-accelerators.yml"
     fi
-    printf 'kas/targets/rdk-x5.yml\n'
+    if [ "$preempt_rt" = "1" ]; then
+      kas_config="${kas_config}:kas/include/rdk-x5-preempt-rt.yml"
+    fi
+    printf '%s\n' "$kas_config"
     return 0
   fi
 
@@ -272,14 +306,15 @@ saha_prepare_docker_env() {
 saha_build_dir() {
   local root_dir=$1
   local target=$2
-  local ros_distro x5_accelerators
+  local ros_distro x5_accelerators preempt_rt
+  preempt_rt="$(saha_x5_preempt_rt_mode "$target")" || return $?
   x5_accelerators="$(saha_x5_accelerators_mode)" || return $?
   if [ -n "${SAHA_BUILD_DIR:-}" ]; then
     printf '%s\n' "$SAHA_BUILD_DIR"
     return 0
   fi
-  if [ "$target" = "rdk-x5" ] && [ "$x5_accelerators" = "1" ]; then
-    printf '%s\n' "$root_dir/build/rdk-x5-accelerators"
+  if [ "$target" = "rdk-x5" ]; then
+    printf '%s\n' "$root_dir/build/$(saha_x5_build_name "$preempt_rt" "$x5_accelerators")"
     return 0
   fi
   ros_distro="$(saha_current_ros_distro "$target")" || return $?
@@ -327,11 +362,12 @@ saha_prepare_microduck_release() {
 
 saha_container_build_dir() {
   local target=$1
-  local x5_accelerators
+  local x5_accelerators preempt_rt
+  preempt_rt="$(saha_x5_preempt_rt_mode "$target")" || return $?
   x5_accelerators="$(saha_x5_accelerators_mode)" || return $?
 
-  if [ "$target" = "rdk-x5" ] && [ "$x5_accelerators" = "1" ]; then
-    printf '%s\n' "/work/build/rdk-x5-accelerators"
+  if [ "$target" = "rdk-x5" ]; then
+    printf '%s\n' "/work/build/$(saha_x5_build_name "$preempt_rt" "$x5_accelerators")"
     return 0
   fi
   printf '%s\n' "/work/build/$target"

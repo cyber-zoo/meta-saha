@@ -1,0 +1,50 @@
+[
+  {
+    "file": "0004-cacheinfo-fix-cache-node-refcount.patch",
+    "upstream": "3da72e18371c41a6f6f96b594854b178168c7757",
+    "sha256": "ed267dad80f94fe4a07964150670a79d29a66fcb6c37dfefbbba889b1c49465d",
+    "bytes": 1874
+  },
+  {
+    "file": "0005-cacheinfo-retain-firmware-token.patch",
+    "upstream": "2613cc29c5723881ca603b1a3b50f0107010d5d6",
+    "sha256": "2b4933bcbb36df049e69e02229f0b1baf476b3e5e9c754d6be05f004c1c30128",
+    "bytes": 3152
+  },
+  {
+    "file": "0006-cacheinfo-generic-OF-cache-levels.patch",
+    "upstream": "c3719bd9eeb2edf84bd263d662e36ca0ba262a23",
+    "sha256": "32baa9fa90f1eb4858d363d4cbaf8b2a659c79ffbccd9769f915d6a37055ab93",
+    "bytes": 4572
+  },
+  {
+    "file": "0007-cacheinfo-return-OF-errors.patch",
+    "upstream": "8844c3df001bc1d8397fddea341308da63855d53",
+    "sha256": "76c332e669c7043cfa2c6c6363579d42f4d707956c6cf37d2d48e52cee925a02",
+    "bytes": 1739
+  },
+  {
+    "file": "0008-cacheinfo-count-split-cache-leaves.patch",
+    "upstream": "de0df442ee49cb1f6ee58f3fec5dcb5e5eb70aab",
+    "sha256": "a57816a3b3555b37f73d166699f89b469e28d8ac78b3144e1d3697f2bdd28e6d",
+    "bytes": 3049
+  },
+  {
+    "file": "0009-arch-topology-preallocate-cacheinfo.patch",
+    "upstream": "5944ce092b97caed5d86d961e963b883b5c44ee2",
+    "sha256": "6b6c683d4b3e20ed2f80e2ffde61fd1a957cfd109b16765fa528ed731f55742f",
+    "bytes": 8343
+  },
+  {
+    "file": "0010-acpi-pptt-remove-old-cache-level-helper.patch",
+    "upstream": "fa4d566a605bc4cf32d69f16ef8cf9696635f75a",
+    "sha256": "70215b3ac2958f768eee7b856781a3eae68ad05b2c8df6824c5fbb893c72a073",
+    "bytes": 2508
+  },
+  {
+    "file": "0011-acpi-pptt-provide-cache-info-api.patch",
+    "upstream": "bd500361a937c03a3da57178287ce543c8f3681b",
+    "sha256": "49fdf66046656929d494d40aa758ca21754a54bd788c127d93b0ecbbf9eee032",
+    "bytes": 10470
+  }
+]
