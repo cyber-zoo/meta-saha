@@ -1,0 +1,147 @@
+From c3719bd9eeb2edf84bd263d662e36ca0ba262a23 Mon Sep 17 00:00:00 2001
+From: Pierre Gondois <pierre.gondois@arm.com>
+Date: Wed, 4 Jan 2023 19:30:24 +0100
+Subject: [PATCH] cacheinfo: Use RISC-V's init_cache_level() as generic OF
+ implementation
+
+Upstream-Status: Backport [https://github.com/torvalds/linux/commit/c3719bd9eeb2edf84bd263d662e36ca0ba262a23]
+
+RISC-V's implementation of init_of_cache_level() is following
+the Devicetree Specification v0.3 regarding caches, cf.:
+- s3.7.3 'Internal (L1) Cache Properties'
+- s3.8 'Multi-level and Shared Cache Nodes'
+
+Allow reusing the implementation by moving it.
+
+Also make 'levels', 'leaves' and 'level' unsigned int.
+
+Signed-off-by: Pierre Gondois <pierre.gondois@arm.com>
+Reviewed-by: Conor Dooley <conor.dooley@microchip.com>
+Acked-by: Palmer Dabbelt <palmer@rivosinc.com>
+Link: https://lore.kernel.org/r/20230104183033.755668-2-pierre.gondois@arm.com
+Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
+---
+ arch/riscv/kernel/cacheinfo.c | 39 +------------------------------
+ drivers/base/cacheinfo.c      | 44 +++++++++++++++++++++++++++++++++++
+ include/linux/cacheinfo.h     |  1 +
+ 3 files changed, 46 insertions(+), 38 deletions(-)
+
+diff --git a/arch/riscv/kernel/cacheinfo.c b/arch/riscv/kernel/cacheinfo.c
+index 90deabfe63eaac..440a3df5944cf5 100644
+--- a/arch/riscv/kernel/cacheinfo.c
++++ b/arch/riscv/kernel/cacheinfo.c
+@@ -115,44 +115,7 @@ static void fill_cacheinfo(struct cacheinfo **this_leaf,
+ 
+ int init_cache_level(unsigned int cpu)
+ {
+-	struct cpu_cacheinfo *this_cpu_ci = get_cpu_cacheinfo(cpu);
+-	struct device_node *np = of_cpu_device_node_get(cpu);
+-	struct device_node *prev = NULL;
+-	int levels = 0, leaves = 0, level;
+-
+-	if (of_property_read_bool(np, "cache-size"))
+-		++leaves;
+-	if (of_property_read_bool(np, "i-cache-size"))
+-		++leaves;
+-	if (of_property_read_bool(np, "d-cache-size"))
+-		++leaves;
+-	if (leaves > 0)
+-		levels = 1;
+-
+-	prev = np;
+-	while ((np = of_find_next_cache_node(np))) {
+-		of_node_put(prev);
+-		prev = np;
+-		if (!of_device_is_compatible(np, "cache"))
+-			break;
+-		if (of_property_read_u32(np, "cache-level", &level))
+-			break;
+-		if (level <= levels)
+-			break;
+-		if (of_property_read_bool(np, "cache-size"))
+-			++leaves;
+-		if (of_property_read_bool(np, "i-cache-size"))
+-			++leaves;
+-		if (of_property_read_bool(np, "d-cache-size"))
+-			++leaves;
+-		levels = level;
+-	}
+-
+-	of_node_put(np);
+-	this_cpu_ci->num_levels = levels;
+-	this_cpu_ci->num_leaves = leaves;
+-
+-	return 0;
++	return init_of_cache_level(cpu);
+ }
+ 
+ int populate_cache_leaves(unsigned int cpu)
+diff --git a/drivers/base/cacheinfo.c b/drivers/base/cacheinfo.c
+index 950b22cdb5f7cd..b60788aacfefc5 100644
+--- a/drivers/base/cacheinfo.c
++++ b/drivers/base/cacheinfo.c
+@@ -229,8 +229,52 @@ static int cache_setup_of_node(unsigned int cpu)
+ 
+ 	return 0;
+ }
++
++int init_of_cache_level(unsigned int cpu)
++{
++	struct cpu_cacheinfo *this_cpu_ci = get_cpu_cacheinfo(cpu);
++	struct device_node *np = of_cpu_device_node_get(cpu);
++	struct device_node *prev = NULL;
++	unsigned int levels = 0, leaves = 0, level;
++
++	if (of_property_read_bool(np, "cache-size"))
++		++leaves;
++	if (of_property_read_bool(np, "i-cache-size"))
++		++leaves;
++	if (of_property_read_bool(np, "d-cache-size"))
++		++leaves;
++	if (leaves > 0)
++		levels = 1;
++
++	prev = np;
++	while ((np = of_find_next_cache_node(np))) {
++		of_node_put(prev);
++		prev = np;
++		if (!of_device_is_compatible(np, "cache"))
++			break;
++		if (of_property_read_u32(np, "cache-level", &level))
++			break;
++		if (level <= levels)
++			break;
++		if (of_property_read_bool(np, "cache-size"))
++			++leaves;
++		if (of_property_read_bool(np, "i-cache-size"))
++			++leaves;
++		if (of_property_read_bool(np, "d-cache-size"))
++			++leaves;
++		levels = level;
++	}
++
++	of_node_put(np);
++	this_cpu_ci->num_levels = levels;
++	this_cpu_ci->num_leaves = leaves;
++
++	return 0;
++}
++
+ #else
+ static inline int cache_setup_of_node(unsigned int cpu) { return 0; }
++int init_of_cache_level(unsigned int cpu) { return 0; }
+ #endif
+ 
+ int __weak cache_setup_acpi(unsigned int cpu)
+diff --git a/include/linux/cacheinfo.h b/include/linux/cacheinfo.h
+index 00b7a6ae861758..ff0328f3fbb0f8 100644
+--- a/include/linux/cacheinfo.h
++++ b/include/linux/cacheinfo.h
+@@ -80,6 +80,7 @@ struct cpu_cacheinfo {
+ 
+ struct cpu_cacheinfo *get_cpu_cacheinfo(unsigned int cpu);
+ int init_cache_level(unsigned int cpu);
++int init_of_cache_level(unsigned int cpu);
+ int populate_cache_leaves(unsigned int cpu);
+ int cache_setup_acpi(unsigned int cpu);
+ bool last_level_cache_is_valid(unsigned int cpu);

@@ -1,0 +1,2 @@
+# Preserve upstream patch context/endings without suppressing source checks.
+saha-layers/meta-rdk-x5-saha/recipes-kernel/linux/files/*.patch whitespace=-blank-at-eol,-space-before-tab,-blank-at-eof

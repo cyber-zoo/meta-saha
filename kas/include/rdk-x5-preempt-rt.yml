@@ -1,0 +1,7 @@
+header:
+  version: 17
+
+local_conf_header:
+  rdk-x5-preempt-rt: |
+    SAHA_X5_PREEMPT_RT = "1"
+    CORE_IMAGE_BASE_INSTALL:append = " saha-rt-tests"

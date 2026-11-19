@@ -1,0 +1,104 @@
+#!/usr/bin/python3
+# SPDX-License-Identifier: MIT
+"""Explicit measurement only: no autorun, reboot, flash or motor commands."""
+import argparse
+import gzip
+import json
+import os
+from pathlib import Path
+import subprocess
+import tempfile
+import time
+
+
+def main():
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--duration',type=int,default=60,help='seconds per case')
+    parser.add_argument('--interval-us',type=int,default=1000)
+    parser.add_argument('--load',action='store_true',help='bounded CPU,128MiB memory and64MiB scratch-file load')
+    parser.add_argument('--output',type=Path,required=True)
+    args=parser.parse_args()
+    if not 1<=args.duration<=86400 or not 100<=args.interval_us<=1000000:
+        parser.error('duration or interval outside supported range')
+    if args.output.exists():
+        parser.error('output must be a new directory')
+    if os.geteuid()!=0:
+        parser.error('root is required for FIFO scheduling and memory locking')
+    with gzip.open('/proc/config.gz','rt') as source:config=source.read()
+    if 'CONFIG_PREEMPT_RT=y\n' not in config or Path('/sys/kernel/realtime').read_text().strip()!='1':
+        parser.error('running kernel is not PREEMPT_RT')
+    args.output.mkdir(mode=0o700,parents=True)
+    (args.output/'kernel.config').write_text(config)
+    before=subprocess.run(['dmesg'],capture_output=True,text=True)
+    (args.output/'dmesg-before.log').write_text(before.stdout+before.stderr)
+    if before.returncode:
+        raise RuntimeError('cannot capture initial kernel diagnostics; measurement refused')
+    result={'kernel':os.uname().release,'boot_id':Path('/proc/sys/kernel/random/boot_id').read_text().strip(),
+            'period_us':args.interval_us,'duration_s':args.duration,'load_requested':args.load,
+            'measurement_complete':False,
+            'scope':'scheduler wakeup measurement; does not qualify physical motor/bus deadlines'}
+    for name,path in [('cmdline','/proc/cmdline'),('interrupts-before','/proc/interrupts'),
+                      ('cpu-online','/sys/devices/system/cpu/online')]:
+        (args.output/(name+'.txt')).write_text(Path(path).read_text())
+    result['cpu_policies']={str(p):p.read_text().strip() for p in Path('/sys/devices/system/cpu/cpufreq').glob('policy*/scaling_governor')}
+    load=None
+    with (args.output/'stress.log').open('w') as load_log, (args.output/'cyclictest.log').open('w') as latency_log:
+        scratch=Path(tempfile.mkdtemp(prefix='scratch.',dir=args.output))
+        try:
+            if args.load:
+                load_command=['stress-ng','--cpu',str(max(1,(os.cpu_count() or 1)-1)),
+                     '--vm','1','--vm-bytes','128M','--hdd','1','--hdd-bytes','64M',
+                     '--temp-path',str(scratch),'--timeout',str(args.duration+10)+'s','--metrics-brief']
+                result['load_command']=load_command
+                load=subprocess.Popen(load_command,
+                     stdout=load_log,stderr=subprocess.STDOUT)
+                time.sleep(2)
+                if load.poll() is not None:
+                    raise RuntimeError('requested background load did not stay active')
+            command=['cyclictest','--mlockall','--smp','--priority=80',
+                     '--interval='+str(args.interval_us),'--duration='+str(args.duration)+'s',
+                     '--histogram=10000','--json='+str(args.output/'cyclictest.json')]
+            result['cyclictest_command']=command
+            p=subprocess.run(command,stdout=latency_log,stderr=subprocess.STDOUT,timeout=args.duration+60)
+            result['cyclictest_exit']=p.returncode
+            if p.returncode:
+                raise RuntimeError('cyclictest failed; inspect log')
+            result['cyclictest']=json.loads((args.output/'cyclictest.json').read_text())
+            if load is not None and load.poll() is not None:
+                raise RuntimeError('background load ended early; measurement is not a loaded-case result')
+            if load is not None:
+                result['load_exit']=load.wait(timeout=20)
+                if result['load_exit']!=0:
+                    raise RuntimeError('background load failed; inspect stress.log')
+            result['measurement_complete']=True
+            result['motion_control_acceptance']='NOT EVALUATED; requires declared deadlines and actual I/O tests'
+        except Exception as error:
+            result['error']=str(error)
+            raise
+        finally:
+            if load is not None and load.poll() is None:
+                load.terminate()
+                try:load.wait(timeout=15)
+                except subprocess.TimeoutExpired:
+                    load.kill();load.wait()
+                    result['load_killed_after_timeout']=True
+            if load is not None:result['load_exit']=load.returncode
+            # Delete only this runner's scratch directory, keep all measurement logs.
+            import shutil
+            shutil.rmtree(scratch)
+            result['scratch_removed']=not scratch.exists()
+            (args.output/'interrupts-after.txt').write_text(Path('/proc/interrupts').read_text())
+            after=subprocess.run(['dmesg'],capture_output=True,text=True)
+            (args.output/'dmesg-after.log').write_text(after.stdout+after.stderr)
+            result['dmesg_after_exit']=after.returncode
+            if after.returncode:
+                result['measurement_complete']=False
+                result.setdefault('error','cannot capture final kernel diagnostics')
+            (args.output/'result.json').write_text(json.dumps(result,indent=2)+'\n')
+            if after.returncode:
+                raise RuntimeError('cannot capture final kernel diagnostics; measurement incomplete')
+    print('Measurement saved:',args.output)
+
+
+if __name__=='__main__':
+    main()

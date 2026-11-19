@@ -169,6 +169,129 @@ contains "$rdk_accelerator_dry_run_output" "/work/build/rdk-x5-accelerators"
 contains "$rdk_accelerator_dry_run_output" "KAS_WORK_DIR=/work/build/rdk-x5-accelerators"
 rmdir "$rdk_accelerator_bsp_dir"
 
+rdk_rt_workspace="$(mktemp -d)"
+mkdir -p "$rdk_rt_workspace/bsp" "$rdk_rt_workspace/bin"
+rdk_rt_default_output="$(
+  unset SAHA_X5_PREEMPT_RT
+  SAHA_DRY_RUN=1 SAHA_X5_ACCELERATORS=0 \
+    SAHA_META_D_ROBOTICS_DIR="$rdk_rt_workspace/bsp" \
+    "$ROOT_DIR/scripts/saha-build" rdk-x5
+)"
+rdk_rt_off_output="$(
+  SAHA_DRY_RUN=1 SAHA_X5_PREEMPT_RT=0 SAHA_X5_ACCELERATORS=0 \
+    SAHA_META_D_ROBOTICS_DIR="$rdk_rt_workspace/bsp" \
+    "$ROOT_DIR/scripts/saha-build" rdk-x5
+)"
+[[ "$rdk_rt_default_output" = "$rdk_rt_off_output" ]] ||
+  fail "unset and explicitly disabled X5 RT must preserve the ordinary build command"
+if [[ "$rdk_rt_default_output" == *"kas/include/rdk-x5-preempt-rt.yml"* ]] ||
+   [[ "$rdk_rt_default_output" == *"KAS_BUILD_DIR=/work/build/rdk-x5-preempt-rt"* ]]; then
+  fail "X5 PREEMPT_RT must remain opt-in"
+fi
+
+rdk_rt_output="$(
+  SAHA_DRY_RUN=1 SAHA_X5_PREEMPT_RT=1 SAHA_X5_ACCELERATORS=0 \
+    SAHA_META_D_ROBOTICS_DIR="$rdk_rt_workspace/bsp" \
+    "$ROOT_DIR/scripts/saha-build" rdk-x5
+)"
+contains "$rdk_rt_output" "kas build kas/targets/rdk-x5.yml:kas/include/rdk-x5-preempt-rt.yml"
+contains "$rdk_rt_output" "/build/rdk-x5-preempt-rt:/work/build/rdk-x5-preempt-rt"
+contains "$rdk_rt_output" "KAS_BUILD_DIR=/work/build/rdk-x5-preempt-rt"
+contains "$rdk_rt_output" "KAS_WORK_DIR=/work/build/rdk-x5-preempt-rt"
+contains "$rdk_rt_output" "/work/downloads"
+contains "$rdk_rt_output" "/work/sstate-cache"
+contains "$rdk_rt_output" ":/work/meta-d-robotics:ro"
+if [[ "$rdk_rt_output" == *"rdk-x5-accelerators.yml"* ]]; then
+  fail "X5 RT must not implicitly enable accelerators"
+fi
+
+rdk_rt_accelerator_output="$(
+  SAHA_DRY_RUN=1 SAHA_X5_PREEMPT_RT=1 SAHA_X5_ACCELERATORS=1 \
+    SAHA_META_D_ROBOTICS_DIR="$rdk_rt_workspace/bsp" \
+    "$ROOT_DIR/scripts/saha-build" rdk-x5
+)"
+contains "$rdk_rt_accelerator_output" "kas build kas/targets/rdk-x5.yml:kas/include/rdk-x5-accelerators.yml:kas/include/rdk-x5-preempt-rt.yml"
+contains "$rdk_rt_accelerator_output" "/build/rdk-x5-preempt-rt-accelerators:/work/build/rdk-x5-preempt-rt-accelerators"
+contains "$rdk_rt_accelerator_output" "KAS_BUILD_DIR=/work/build/rdk-x5-preempt-rt-accelerators"
+contains "$rdk_rt_accelerator_output" "KAS_WORK_DIR=/work/build/rdk-x5-preempt-rt-accelerators"
+if [[ "$rdk_rt_accelerator_output" == *"/build/rdk-x5:"* ]] ||
+   [[ "$rdk_rt_accelerator_output" == *"/build/rdk-x5-accelerators:"* ]] ||
+   [[ "$rdk_rt_accelerator_output" == *"/build/rdk-x5-preempt-rt:"* ]]; then
+  fail "the combined RT/accelerator build must not reuse another default build directory"
+fi
+
+rdk_rt_custom_output="$(
+  SAHA_DRY_RUN=1 SAHA_X5_PREEMPT_RT=1 SAHA_X5_ACCELERATORS=0 \
+    SAHA_BUILD_DIR="$rdk_rt_workspace/rt cache" \
+    SAHA_META_D_ROBOTICS_DIR="$rdk_rt_workspace/bsp" \
+    "$ROOT_DIR/scripts/saha-build" rdk-x5
+)"
+contains "$rdk_rt_custom_output" "rt\\ cache:/work/build/rdk-x5-preempt-rt"
+
+rdk_rt_shell_output="$(
+  SAHA_DRY_RUN=1 SAHA_X5_PREEMPT_RT=1 SAHA_X5_ACCELERATORS=1 \
+    SAHA_META_D_ROBOTICS_DIR="$rdk_rt_workspace/bsp" \
+    "$ROOT_DIR/scripts/saha-shell" rdk-x5 -c 'bitbake -p'
+)"
+contains "$rdk_rt_shell_output" "kas shell kas/targets/rdk-x5.yml:kas/include/rdk-x5-accelerators.yml:kas/include/rdk-x5-preempt-rt.yml -c bitbake\\ -p"
+contains "$rdk_rt_shell_output" "KAS_WORK_DIR=/work/build/rdk-x5-preempt-rt-accelerators"
+rdk_rt_validate_output="$(
+  SAHA_DRY_RUN=1 SAHA_X5_PREEMPT_RT=1 SAHA_X5_ACCELERATORS=0 \
+    SAHA_META_D_ROBOTICS_DIR="$rdk_rt_workspace/bsp" \
+    "$ROOT_DIR/scripts/saha-validate" rdk-x5
+)"
+contains "$rdk_rt_validate_output" "kas dump --skip repo_setup_loop --skip finish_setup_repos --skip repos_checkout --skip repos_apply_patches kas/targets/rdk-x5.yml:kas/include/rdk-x5-preempt-rt.yml"
+
+# Invalid inputs must fail before any real Docker invocation, not only hide
+# Docker commands in dry-run output. The stub fails if validation reaches it.
+cat > "$rdk_rt_workspace/bin/docker" <<'DOCKER'
+#!/usr/bin/env bash
+: > "${SAHA_TEST_DOCKER_MARKER:?}"
+exit 97
+DOCKER
+chmod +x "$rdk_rt_workspace/bin/docker"
+for entrypoint in saha-build saha-shell saha-validate; do
+  for invalid_rt in '' yes true 2 -1; do
+    if env SAHA_DRY_RUN=1 SAHA_X5_PREEMPT_RT="$invalid_rt" SAHA_X5_ACCELERATORS=0 \
+        SAHA_META_D_ROBOTICS_DIR="$rdk_rt_workspace/bsp" \
+        "$ROOT_DIR/scripts/$entrypoint" rdk-x5 > "$rdk_rt_workspace/error" 2>&1; then
+      fail "$entrypoint accepted invalid X5 RT value: $invalid_rt"
+    fi
+    contains "$(cat "$rdk_rt_workspace/error")" "SAHA_X5_PREEMPT_RT must be 0 or 1"
+    ! grep -q 'docker ' "$rdk_rt_workspace/error" || fail "X5 RT validation must precede Docker dry-run output"
+    if env PATH="$rdk_rt_workspace/bin:$PATH" SAHA_DRY_RUN=0 \
+        SAHA_TEST_DOCKER_MARKER="$rdk_rt_workspace/docker-called" \
+        SAHA_X5_PREEMPT_RT="$invalid_rt" SAHA_X5_ACCELERATORS=0 \
+        SAHA_META_D_ROBOTICS_DIR="$rdk_rt_workspace/bsp" \
+        "$ROOT_DIR/scripts/$entrypoint" rdk-x5 > "$rdk_rt_workspace/error" 2>&1; then
+      fail "$entrypoint accepted invalid X5 RT value outside dry-run: $invalid_rt"
+    else
+      rdk_rt_status=$?
+    fi
+    [[ "$rdk_rt_status" = "2" ]] || fail "$entrypoint must reject invalid X5 RT values with status 2"
+    [ ! -e "$rdk_rt_workspace/docker-called" ] || fail "invalid X5 RT value invoked Docker"
+  done
+  for unsupported_target in orin-nx-16g-p3768 agx-thor-devkit agx-orin-devkit iq-9075-evk radxa-zero-3w orangepi-zero3w; do
+    if env SAHA_DRY_RUN=1 SAHA_X5_PREEMPT_RT=1 SAHA_X5_ACCELERATORS=0 \
+        "$ROOT_DIR/scripts/$entrypoint" "$unsupported_target" > "$rdk_rt_workspace/error" 2>&1; then
+      fail "$entrypoint accepted X5 RT for $unsupported_target"
+    fi
+    contains "$(cat "$rdk_rt_workspace/error")" "SAHA_X5_PREEMPT_RT is supported only for rdk-x5"
+    ! grep -q 'docker ' "$rdk_rt_workspace/error" || fail "non-X5 RT must be rejected before Docker dry-run output"
+    if env PATH="$rdk_rt_workspace/bin:$PATH" SAHA_DRY_RUN=0 \
+        SAHA_TEST_DOCKER_MARKER="$rdk_rt_workspace/docker-called" \
+        SAHA_X5_PREEMPT_RT=1 SAHA_X5_ACCELERATORS=0 \
+        "$ROOT_DIR/scripts/$entrypoint" "$unsupported_target" > "$rdk_rt_workspace/error" 2>&1; then
+      fail "$entrypoint accepted X5 RT for $unsupported_target outside dry-run"
+    else
+      rdk_rt_status=$?
+    fi
+    [[ "$rdk_rt_status" = "2" ]] || fail "$entrypoint must reject unsupported X5 RT targets with status 2"
+    [ ! -e "$rdk_rt_workspace/docker-called" ] || fail "non-X5 RT invoked Docker"
+  done
+done
+rm -r -- "$rdk_rt_workspace"
+
 if SAHA_DRY_RUN=1 SAHA_X5_ACCELERATORS=1 "$ROOT_DIR/scripts/saha-build" orin-nx-16g-p3768 >/tmp/saha-x5-accelerators-jetson.out 2>&1; then
   fail "Jetson unexpectedly accepted the RDK X5 accelerator switch"
 fi

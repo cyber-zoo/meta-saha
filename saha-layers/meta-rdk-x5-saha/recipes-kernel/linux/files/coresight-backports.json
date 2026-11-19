@@ -1,0 +1,60 @@
+{
+  "source_commit": "c642eabfd7aacc4f44f2300e69d27ef1691a47d7",
+  "upstream_commits": [
+    "e3044065fc2cf148d278475d5d03465ebf01248c",
+    "743c5a97c64d9a2fd7feb3cf9fe3651fba0359db"
+  ],
+  "patch_sha256": "38c9b74172dd6493a435db6d853bb15d3b463f394133353f78465dbb5496198b",
+  "files": [
+    {
+      "path": "drivers/hwtracing/coresight/coresight-cti-core.c",
+      "before_sha256": "fdc32ebfd6b8bafc3aba39773e27a49d13d61f97acd7eeed3d1e0710ea41b4b4",
+      "candidate_sha256": "6cd1f6b813b87b8cc30b56b7796f6e5b1d1ec898c8044b3e5fa2e5e2da699938",
+      "lock_api_replacements": 22
+    },
+    {
+      "path": "drivers/hwtracing/coresight/coresight-cti-sysfs.c",
+      "before_sha256": "69a21a74ea61a50c9b32da8f444238073ea734ad82528f8e6ded8cc539e3e9c2",
+      "candidate_sha256": "d9c56ad84ccfbe05d96218dd12a80d60ffd0c82fd0873b0a3cf611801be7ca34",
+      "lock_api_replacements": 38
+    },
+    {
+      "path": "drivers/hwtracing/coresight/coresight-cti.h",
+      "before_sha256": "a2ee8528c75ee6a5fe63f5d2253a04b3f562d8ebc5a33ad3b4c99fc85e46b97b",
+      "candidate_sha256": "1674b45b7fbef628d733263a27cd8ad21a0d4bb079ee05c72b3a75cb3224d1d5",
+      "lock_api_replacements": null
+    },
+    {
+      "path": "drivers/hwtracing/coresight/coresight-etm4x-core.c",
+      "before_sha256": "eb2b026cfd507736269449940ead86af1f2a4910d095015c9b8fc8be433f8b5c",
+      "candidate_sha256": "370d400579d7f835b1567878927a31f51fbe5d1d61ed55d11b85f8d92c8fee66",
+      "lock_api_replacements": 9
+    },
+    {
+      "path": "drivers/hwtracing/coresight/coresight-etm4x-sysfs.c",
+      "before_sha256": "e489aece48ba7b9bf3c9a5a930950899dfd9a700f1411917797b3a129edbc4a4",
+      "candidate_sha256": "87a768ba8d91cbd4b84d58e3731eee0171c2202e92a2ecf237fbfecafcf04921",
+      "lock_api_replacements": 125
+    },
+    {
+      "path": "drivers/hwtracing/coresight/coresight-etm4x.h",
+      "before_sha256": "89ddd7e7b597025d2b11f56e5d6e3d15ccddb5c4a098914c95fba59dd483fb9f",
+      "candidate_sha256": "d398b8ff1a57c1ac75fbbb9f47868d0a4716a82a04c77cf641217c76cce8efe1",
+      "lock_api_replacements": null
+    },
+    {
+      "path": "drivers/hwtracing/coresight/coresight-config.c",
+      "before_sha256": "6d22c2106d157bd1c3f1895eee55368f83a8d8dcc15d2d9336a1ffdcb5f10f1a",
+      "candidate_sha256": "062871d10f16ce70175c02389241b28e298b5dc2d010f7818a5c90e5f3e2f0da",
+      "lock_api_replacements": 4
+    },
+    {
+      "path": "drivers/hwtracing/coresight/coresight-config.h",
+      "before_sha256": "221ccb64014c8d6fdc5ba997930a3244afd42f5f45c8b1930b2f516476e69c5f",
+      "candidate_sha256": "62abd99d430a7740aef76dfa1cd3c38083611973b1a456f2409c5fa58731aa8a",
+      "lock_api_replacements": null
+    }
+  ],
+  "author": "Yeoreum Yun <yeoreum.yun@arm.com>",
+  "adaptation": "Combined CTI/ETM4 raw-lock conversion for pinned vendor 6.1.83; newer trace-ID-map dependency does not exist in this tree."
+}

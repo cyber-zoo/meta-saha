@@ -1,0 +1,48 @@
+Subject: [PATCH] pps: hobot client: do not dereference a virtual source IRQ
+
+Upstream-Status: Inappropriate [vendor-only driver]
+
+The built-in client disables IRQ allocation unless REAL_PPS_ENABLE is set,
+but its RT branch unconditionally dereferences irq_desc->action->thread.
+On the RDK-X5 RT image this panics in hobot_pps_probe at boot. Preserve PPS
+registration and the conditional real IRQ handler. Leave thread policy to
+the IRQ core, matching the separate modular Hobot PPS implementation, and
+remove use of unexported IRQ/scheduler internals. No PPS feature is disabled.
+
+diff --git a/drivers/pps/clients/hobot-pps.c b/drivers/pps/clients/hobot-pps.c
+index d8eb95a0a..927556355 100755
+--- a/drivers/pps/clients/hobot-pps.c
++++ b/drivers/pps/clients/hobot-pps.c
+@@ -108,11 +108,6 @@ static int32_t hobot_pps_register_source(struct platform_device *pdev,
+ {
+ 	uint32_t pps_default_params;
+ 	int32_t ret = 0;
+-#ifdef CONFIG_PREEMPT_RT
+-	struct irq_desc *desc;
+-	struct irqaction *action;
+-	struct sched_param param = {.sched_priority = MAX_RT_PRIO - 1};
+-#endif
+ 
+ 	pps_default_params = (uint32_t)PPS_CAPTUREASSERT | (uint32_t)PPS_OFFSETASSERT;
+ 	if (data->capture_clear) {
+@@ -137,16 +132,10 @@ static int32_t hobot_pps_register_source(struct platform_device *pdev,
+ 	}
+ #endif
+ 
+-#ifdef CONFIG_PREEMPT_RT
+-	desc = irq_to_desc((u32)data->irq);
+-	action = desc->action;
+-	if (action->thread != NULL) {
+-		ret = sched_setscheduler(action->thread, SCHED_FIFO, &param);
+-		if (ret < 0) {
+-			dev_err(&pdev->dev, "sched_setscheduler is fail(%d)\n", ret);
+-		}
+-	}
+-#endif
++	/* IRQ requests are compiled only with REAL_PPS_ENABLE. Leave any IRQ
++	 * thread policy to the IRQ core; no irq_desc/action exists for the
++	 * default virtual PPS source, and no private scheduler API is needed.
++	 */
+ 	return ret;
+ }
+ 
